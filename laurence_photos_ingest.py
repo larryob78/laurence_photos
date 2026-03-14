@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""LAURENCE PHOTOS — INGESTION PIPELINE v1.2.0"""
-import argparse, hashlib, json, logging, os, re, sqlite3, sys, time
+"""LAURENCE PHOTOS — INGESTION PIPELINE v1.3.0
+Multimodal RAG pipeline: Gemini vision + Claude reasoning + Qdrant vectors
+"""
+import argparse, base64, hashlib, json, logging, os, re, sqlite3, sys, time
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 IMAGE_EXTENSIONS = {".png",".jpg",".jpeg",".gif",".bmp",".webp",".tiff",".tif",".heic",".heif",".avif",".svg"}
 CATEGORY_SIGNALS = {
     "screenshot": ["screenshot","screen shot","screen_shot","screencap","screenclip","snip","capture","grab","clip","cleanshot","shottr","skitch"],
@@ -122,6 +124,203 @@ class PrivacyFilter:
                     if len(faces) > 0: return True, f"faces_detected:{len(faces)}"
             except Exception as e: logger.debug(f"OpenCV check failed for {filepath}: {e}")
         return False, ""
+class GeminiVision:
+    """Describe images using Google Gemini vision API."""
+    def __init__(self, api_key=None, model="gemini-2.0-flash"):
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        self.model = model
+        self._client = None
+        if not self.api_key:
+            logger.warning("No Gemini API key found (set GOOGLE_API_KEY or GEMINI_API_KEY)")
+        else:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=self.api_key)
+                self._client = genai.GenerativeModel(self.model)
+                logger.info("Gemini vision enabled (model: %s)", self.model)
+            except ImportError:
+                logger.warning("google-generativeai not installed - vision descriptions disabled")
+            except Exception as e:
+                logger.warning("Gemini init failed: %s", e)
+
+    @property
+    def available(self):
+        return self._client is not None
+
+    def describe(self, filepath, category_hint=""):
+        """Get a visual description of an image using Gemini."""
+        if not self._client:
+            return None
+        try:
+            from PIL import Image
+            img = Image.open(filepath)
+            prompt = (
+                "Describe this image concisely for a searchable knowledge base. "
+                "Include: what type of image it is (screenshot, diagram, note, UI design, code, etc.), "
+                "key visible text or labels, main subjects, tools or apps shown, and any notable details. "
+                "Keep it under 200 words."
+            )
+            if category_hint:
+                prompt += f" This image was heuristically classified as: {category_hint}."
+            response = self._client.generate_content([prompt, img])
+            img.close()
+            return response.text.strip() if response.text else None
+        except Exception as e:
+            logger.debug("Gemini describe failed for %s: %s", filepath, e)
+            return None
+
+
+class ClaudeReasoner:
+    """Use Claude for enhanced classification and metadata extraction."""
+    def __init__(self, api_key=None, model="claude-sonnet-4-20250514"):
+        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        self.model = model
+        self._client = None
+        if not self.api_key:
+            logger.warning("No Anthropic API key found (set ANTHROPIC_API_KEY)")
+        else:
+            try:
+                import anthropic
+                self._client = anthropic.Anthropic(api_key=self.api_key)
+                logger.info("Claude reasoning enabled (model: %s)", self.model)
+            except ImportError:
+                logger.warning("anthropic SDK not installed - Claude reasoning disabled")
+            except Exception as e:
+                logger.warning("Claude init failed: %s", e)
+
+    @property
+    def available(self):
+        return self._client is not None
+
+    def enrich(self, description, filepath, heuristic_category, img_meta=None):
+        """Use Claude to extract structured metadata from a Gemini description."""
+        if not self._client or not description:
+            return None
+        try:
+            context = f"File: {filepath.name}\nHeuristic category: {heuristic_category}"
+            if img_meta:
+                context += f"\nDimensions: {img_meta.get('width')}x{img_meta.get('height')}"
+                context += f"\nFormat: {img_meta.get('format')} | Extension: {img_meta.get('extension')}"
+            prompt = f"""Given this image description and file context, extract structured metadata as JSON.
+
+Image description: {description}
+
+{context}
+
+Return ONLY valid JSON with these fields:
+- "category": primary category (screenshot, diagram, note, ui_design, code, reference, ai_tool, or other)
+- "subcategory": more specific type (e.g. "terminal_screenshot", "flowchart", "handwritten_note")
+- "tags": list of 3-8 searchable tags
+- "tools_shown": list of any software tools, apps, or services visible
+- "text_content": key text visible in the image (brief summary, not OCR)
+- "summary": one-sentence description optimized for search"""
+
+            response = self._client.messages.create(
+                model=self.model,
+                max_tokens=500,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            text = response.content[0].text.strip()
+            # Extract JSON from response (handle markdown code blocks)
+            if "```" in text:
+                text = re.search(r"```(?:json)?\s*(.+?)```", text, re.DOTALL).group(1).strip()
+            return json.loads(text)
+        except Exception as e:
+            logger.debug("Claude enrich failed for %s: %s", filepath, e)
+            return None
+
+
+class QdrantStore:
+    """Store image embeddings in Qdrant for vector search."""
+    def __init__(self, url=None, api_key=None, collection_name="laurence_photos"):
+        self.url = url or os.environ.get("QDRANT_URL", "http://localhost:6333")
+        self.api_key = api_key or os.environ.get("QDRANT_API_KEY")
+        self.collection_name = collection_name
+        self._client = None
+        self._embed_model = None
+        self._embed_dim = None
+        self._init_embedding()
+        self._init_qdrant()
+
+    def _init_embedding(self):
+        """Initialize sentence-transformers for text embedding."""
+        try:
+            from sentence_transformers import SentenceTransformer
+            self._embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+            self._embed_dim = 384
+            logger.info("Embedding model loaded (all-MiniLM-L6-v2, dim=%d)", self._embed_dim)
+        except ImportError:
+            logger.warning("sentence-transformers not installed - trying Gemini embeddings")
+            gemini_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+            if gemini_key:
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=gemini_key)
+                    self._embed_model = "gemini"
+                    self._embed_dim = 768
+                    logger.info("Using Gemini text embeddings (dim=%d)", self._embed_dim)
+                except Exception as e:
+                    logger.warning("Gemini embedding init failed: %s", e)
+
+    def _init_qdrant(self):
+        """Initialize Qdrant client and ensure collection exists."""
+        if not self._embed_model:
+            logger.warning("No embedding model available - Qdrant storage disabled")
+            return
+        try:
+            from qdrant_client import QdrantClient
+            from qdrant_client.models import Distance, VectorParams
+            connect_kwargs = {"url": self.url}
+            if self.api_key:
+                connect_kwargs["api_key"] = self.api_key
+            self._client = QdrantClient(**connect_kwargs)
+            collections = [c.name for c in self._client.get_collections().collections]
+            if self.collection_name not in collections:
+                self._client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(size=self._embed_dim, distance=Distance.COSINE),
+                )
+                logger.info("Created Qdrant collection: %s", self.collection_name)
+            else:
+                logger.info("Using existing Qdrant collection: %s", self.collection_name)
+        except ImportError:
+            logger.warning("qdrant-client not installed - vector storage disabled")
+        except Exception as e:
+            logger.warning("Qdrant connection failed (%s): %s", self.url, e)
+            self._client = None
+
+    @property
+    def available(self):
+        return self._client is not None and self._embed_model is not None
+
+    def _embed_text(self, text):
+        """Generate embedding vector from text."""
+        if self._embed_model == "gemini":
+            import google.generativeai as genai
+            result = genai.embed_content(model="models/text-embedding-004", content=text)
+            return result["embedding"]
+        else:
+            return self._embed_model.encode(text).tolist()
+
+    def upsert(self, record_id, text, payload):
+        """Embed text and upsert into Qdrant."""
+        if not self.available:
+            return False
+        try:
+            from qdrant_client.models import PointStruct
+            vector = self._embed_text(text)
+            point = PointStruct(
+                id=record_id,
+                vector=vector,
+                payload=payload,
+            )
+            self._client.upsert(collection_name=self.collection_name, points=[point])
+            return True
+        except Exception as e:
+            logger.debug("Qdrant upsert failed: %s", e)
+            return False
+
+
 def classify_image(filepath, img_meta=None):
     path_lower = str(filepath).lower().replace("\\", "/")
     name_lower = filepath.stem.lower()
@@ -201,7 +400,7 @@ def _human_size(size_bytes):
         size_bytes /= 1024
     return f"{size_bytes:.1f} TB"
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, filepath TEXT UNIQUE NOT NULL, filename TEXT NOT NULL, sha256 TEXT NOT NULL, size_bytes INTEGER, width INTEGER, height INTEGER, format TEXT, mode TEXT, extension TEXT, modified_at TEXT, created_at TEXT, primary_category TEXT, all_categories TEXT, signals TEXT, confidence REAL, ingested_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS images (id INTEGER PRIMARY KEY AUTOINCREMENT, filepath TEXT UNIQUE NOT NULL, filename TEXT NOT NULL, sha256 TEXT NOT NULL, size_bytes INTEGER, width INTEGER, height INTEGER, format TEXT, mode TEXT, extension TEXT, modified_at TEXT, created_at TEXT, primary_category TEXT, all_categories TEXT, signals TEXT, confidence REAL, vision_description TEXT, vision_category TEXT, vision_tags TEXT, vision_summary TEXT, vision_tools TEXT, vision_text_content TEXT, ingested_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS rejected (id INTEGER PRIMARY KEY AUTOINCREMENT, filepath TEXT UNIQUE NOT NULL, filename TEXT NOT NULL, reject_reason TEXT NOT NULL, rejected_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS ingest_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, source_dir TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT, total_scanned INTEGER DEFAULT 0, total_accepted INTEGER DEFAULT 0, total_rejected INTEGER DEFAULT 0, total_skipped INTEGER DEFAULT 0, total_errors INTEGER DEFAULT 0);
 CREATE INDEX IF NOT EXISTS idx_images_category ON images(primary_category);
@@ -213,8 +412,8 @@ class Database:
         self.db_path = db_path; self.conn = sqlite3.connect(str(db_path)); self.conn.execute("PRAGMA journal_mode=WAL"); self.conn.executescript(SCHEMA); self.conn.commit()
     def image_exists(self, sha256): return self.conn.execute("SELECT 1 FROM images WHERE sha256 = ? LIMIT 1", (sha256,)).fetchone() is not None
     def insert_image(self, r):
-        self.conn.execute("INSERT OR REPLACE INTO images (filepath, filename, sha256, size_bytes, width, height, format, mode, extension, modified_at, created_at, primary_category, all_categories, signals, confidence, ingested_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (r["filepath"], r["filename"], r["sha256"], r.get("size_bytes"), r.get("width"), r.get("height"), r.get("format"), r.get("mode"), r.get("extension"), r.get("modified_at"), r.get("created_at"), r["primary_category"], json.dumps(r.get("all_categories", [])), json.dumps(r.get("signals", {})), r.get("confidence", 0), r["ingested_at"]))
+        self.conn.execute("INSERT OR REPLACE INTO images (filepath, filename, sha256, size_bytes, width, height, format, mode, extension, modified_at, created_at, primary_category, all_categories, signals, confidence, vision_description, vision_category, vision_tags, vision_summary, vision_tools, vision_text_content, ingested_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (r["filepath"], r["filename"], r["sha256"], r.get("size_bytes"), r.get("width"), r.get("height"), r.get("format"), r.get("mode"), r.get("extension"), r.get("modified_at"), r.get("created_at"), r["primary_category"], json.dumps(r.get("all_categories", [])), json.dumps(r.get("signals", {})), r.get("confidence", 0), r.get("vision_description"), r.get("vision_category"), json.dumps(r.get("vision_tags")) if r.get("vision_tags") else None, r.get("vision_summary"), json.dumps(r.get("vision_tools")) if r.get("vision_tools") else None, r.get("vision_text_content"), r["ingested_at"]))
     def insert_rejected(self, filepath, filename, reason):
         self.conn.execute("INSERT OR REPLACE INTO rejected (filepath, filename, reject_reason, rejected_at) VALUES (?,?,?,?)", (filepath, filename, reason, datetime.now().isoformat()))
     def start_run(self, source_dir):
@@ -236,7 +435,7 @@ def scan_images(source_dir):
         resolved = p.resolve()
         if resolved not in seen: seen.add(resolved); unique.append(p)
     return sorted(unique)
-def run_pipeline(source_dir, output_dir, dry_run=False, verbose=False):
+def run_pipeline(source_dir, output_dir, dry_run=False, verbose=False, enable_vision=True):
     setup_logging(verbose)
     logger.info("=" * 60); logger.info("  LAURENCE PHOTOS - INGESTION PIPELINE v%s", VERSION); logger.info("=" * 60)
     logger.info("Source:  %s", source_dir); logger.info("Output:  %s", output_dir); logger.info("Dry run: %s", dry_run); logger.info("")
@@ -244,10 +443,22 @@ def run_pipeline(source_dir, output_dir, dry_run=False, verbose=False):
     output_dir.mkdir(parents=True, exist_ok=True)
     db_path = output_dir / "laurence_photos.db"; jsonl_path = output_dir / "laurence_photos.jsonl"
     privacy = PrivacyFilter()
+    # Initialize multimodal RAG components
+    gemini = GeminiVision() if enable_vision else None
+    claude = ClaudeReasoner() if enable_vision else None
+    qdrant = QdrantStore() if enable_vision else None
+    vision_active = gemini and gemini.available
+    claude_active = claude and claude.available
+    qdrant_active = qdrant and qdrant.available
+    logger.info("Multimodal RAG: Gemini=%s  Claude=%s  Qdrant=%s",
+        "ON" if vision_active else "OFF",
+        "ON" if claude_active else "OFF",
+        "ON" if qdrant_active else "OFF")
+    logger.info("")
     db = Database(db_path) if not dry_run else None; jsonl = JSONLWriter(jsonl_path) if not dry_run else None
     run_id = db.start_run(str(source_dir)) if db else None
     logger.info("Scanning for images..."); all_images = scan_images(source_dir); logger.info("Found %d image files", len(all_images)); logger.info("")
-    stats = Counter(scanned=0, accepted=0, rejected=0, skipped=0, errors=0)
+    stats = Counter(scanned=0, accepted=0, rejected=0, skipped=0, errors=0, vision_described=0, qdrant_stored=0)
     category_counts, reject_reasons = Counter(), Counter()
     t_start = time.time()
     for i, filepath in enumerate(all_images, 1):
@@ -266,10 +477,51 @@ def run_pipeline(source_dir, output_dir, dry_run=False, verbose=False):
                 continue
             classification = classify_image(filepath, img_meta=meta)
             record = {"filepath": str(rel_path), "filename": filepath.name, "sha256": meta["sha256"], "size_bytes": meta["size_bytes"], "size_human": meta["size_human"], "width": meta.get("width"), "height": meta.get("height"), "format": meta.get("format"), "mode": meta.get("mode"), "extension": meta["extension"], "modified_at": meta["modified"], "created_at": meta["created"], "primary_category": classification["primary_category"], "all_categories": classification["all_categories"], "signals": classification["signals"], "confidence": classification["confidence"], "ingested_at": datetime.now().isoformat()}
+            # Gemini vision: get visual description
+            if vision_active:
+                description = gemini.describe(filepath, category_hint=classification["primary_category"])
+                if description:
+                    record["vision_description"] = description
+                    stats["vision_described"] += 1
+                    # Claude reasoning: extract structured metadata from description
+                    if claude_active:
+                        enriched = claude.enrich(description, filepath, classification["primary_category"], img_meta=meta)
+                        if enriched:
+                            record["vision_category"] = enriched.get("category")
+                            record["vision_tags"] = enriched.get("tags", [])
+                            record["vision_summary"] = enriched.get("summary")
+                            record["vision_tools"] = enriched.get("tools_shown", [])
+                            record["vision_text_content"] = enriched.get("text_content")
+                            # Use vision category if heuristic confidence is low
+                            if classification["confidence"] < 0.5 and enriched.get("category"):
+                                record["primary_category"] = enriched["category"]
+                                classification["primary_category"] = enriched["category"]
             stats["accepted"] += 1; category_counts[classification["primary_category"]] += 1
             if db: db.insert_image(record)
             if jsonl: jsonl.write(record)
-            if verbose: logger.debug("ACCEPT  %-40s  [%s] (%.0f%%)", str(rel_path)[:40], classification["primary_category"], classification["confidence"] * 100)
+            # Qdrant: embed and store for vector search
+            if qdrant_active:
+                embed_text = " ".join(filter(None, [
+                    record.get("vision_summary") or record.get("vision_description"),
+                    record.get("vision_text_content", ""),
+                    " ".join(record.get("vision_tags", [])),
+                    record["primary_category"],
+                    filepath.stem,
+                ]))
+                payload = {
+                    "filepath": str(rel_path),
+                    "filename": filepath.name,
+                    "category": record["primary_category"],
+                    "description": record.get("vision_description", ""),
+                    "summary": record.get("vision_summary", ""),
+                    "tags": record.get("vision_tags", []),
+                    "tools": record.get("vision_tools", []),
+                    "width": meta.get("width"),
+                    "height": meta.get("height"),
+                }
+                if qdrant.upsert(record_id=stats["accepted"], text=embed_text, payload=payload):
+                    stats["qdrant_stored"] += 1
+            if verbose: logger.debug("ACCEPT  %-40s  [%s] (%.0f%%)%s", str(rel_path)[:40], classification["primary_category"], classification["confidence"] * 100, " +vision" if record.get("vision_description") else "")
             if db and i % 100 == 0: db.commit()
         except Exception as e: stats["errors"] += 1; logger.warning("ERROR   %s: %s", rel_path, e)
         if i % 50 == 0 or i == len(all_images):
@@ -279,7 +531,12 @@ def run_pipeline(source_dir, output_dir, dry_run=False, verbose=False):
     if db: db.finish_run(run_id, stats); db.close()
     if jsonl: jsonl.close()
     logger.info(""); logger.info("=" * 60); logger.info("  INGESTION COMPLETE"); logger.info("=" * 60)
-    logger.info("  Scanned:  %6d files", stats["scanned"]); logger.info("  Accepted: %6d  (kept)", stats["accepted"]); logger.info("  Rejected: %6d  (privacy filter)", stats["rejected"]); logger.info("  Skipped:  %6d  (duplicates)", stats["skipped"]); logger.info("  Errors:   %6d", stats["errors"]); logger.info("  Time:     %6.1fs", elapsed); logger.info("")
+    logger.info("  Scanned:  %6d files", stats["scanned"]); logger.info("  Accepted: %6d  (kept)", stats["accepted"]); logger.info("  Rejected: %6d  (privacy filter)", stats["rejected"]); logger.info("  Skipped:  %6d  (duplicates)", stats["skipped"]); logger.info("  Errors:   %6d", stats["errors"]); logger.info("  Time:     %6.1fs", elapsed)
+    if vision_active:
+        logger.info("  Vision:   %6d  (Gemini described)", stats["vision_described"])
+    if qdrant_active:
+        logger.info("  Qdrant:   %6d  (vectors stored)", stats["qdrant_stored"])
+    logger.info("")
     if category_counts:
         logger.info("  Categories:")
         for cat, count in category_counts.most_common(): logger.info("    %-18s %4d", cat, count)
@@ -320,6 +577,7 @@ def main():
     parser.add_argument("--dry-run", "-n", action="store_true", help="Scan and classify without writing output")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show per-file decisions")
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
+    parser.add_argument("--no-vision", action="store_true", help="Disable multimodal RAG (Gemini/Claude/Qdrant)")
     parser.add_argument("--install-cron", action="store_true", help="Install weekly cron job (Friday 23:00) and exit")
     args = parser.parse_args()
     output = args.output or Path("./laurence_photos_output")
@@ -327,6 +585,6 @@ def main():
         setup_logging(args.verbose)
         install_cron(source=args.source.expanduser().resolve(), output=output.expanduser().resolve(), verbose=args.verbose)
         return
-    run_pipeline(source_dir=args.source.expanduser().resolve(), output_dir=output.expanduser().resolve(), dry_run=args.dry_run, verbose=args.verbose)
+    run_pipeline(source_dir=args.source.expanduser().resolve(), output_dir=output.expanduser().resolve(), dry_run=args.dry_run, verbose=args.verbose, enable_vision=not args.no_vision)
 if __name__ == "__main__":
     main()

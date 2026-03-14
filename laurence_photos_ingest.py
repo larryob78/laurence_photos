@@ -16,11 +16,11 @@ CATEGORY_SIGNALS = {
     "reference": ["reference","inspiration","moodboard","mood_board","palette","color","typography","texture","bookmark","saved","clipping"],
 }
 PERSONAL_FOLDER_SIGNALS = ["my photos","camera roll","dcim","photo library","iphotos","iphoto","photo booth","photo stream","moments","memories","albums"]
-WORK_FOLDER_SIGNALS = ["screenshots","screenshot","screen shot","downloads","documents","desktop","notes","drawings","sketches","designs","projects","work","clients","creative","assets","exports","renders","output","figma","miro","notion","obsidian","reference","inspiration","research","presentations","decks","proposals","storyboard","moodboard","boards"]
+WORK_FOLDER_SIGNALS = ["screenshots","screenshot","screen shot","downloads","documents","desktop","notes","drawings","sketches","designs","projects","work","client","clients","creative","assets","exports","renders","output","figma","miro","notion","obsidian","reference","inspiration","research","presentations","decks","proposals","storyboard","moodboard","boards"]
 PERSONAL_NAME_SIGNALS = ["img_","dsc_","dscf","dscn","photo_","pic_"]
 STRONG_PERSONAL_SIGNALS = ["selfie","camera_roll","dcim","photo_booth"]
-KNOWN_SCREEN_SIZES = {(2880,1800),(3024,1964),(3456,2234),(2560,1600),(5120,2880),(6016,3384),(4480,2520),(1440,900),(1680,1050),(1920,1200),(2560,1440),(1920,1080),(2560,1080),(3440,1440),(3840,2160),(1366,768),(1536,864),(1600,900),(1280,720),(1280,800),(1024,768),(3840,1080),(5120,1440),(2048,2732),(2732,2048),(2388,1668),(1668,2388),(2360,1640),(1640,2360),(2048,1536),(1536,2048),(1290,2796),(2796,1290),(1179,2556),(2556,1179),(1170,2532),(2532,1170),(1284,2778),(2778,1284),(1125,2436),(2436,1125),(1242,2688),(2688,1242),(750,1334),(1334,750),(1080,1920),(828,1792),(1792,828),(1242,2208),(2208,1242),(1080,2340),(2340,1080),(1440,3200),(3200,1440),(1080,2400),(2400,1080)}
-KNOWN_SCREEN_WIDTHS = {2880,3024,3456,2560,5120,6016,4480,1440,1680,1920,3440,3840,1366,1536,1600,1280,1024,1290,1179,1170,1284,1125,1242,750,828}
+KNOWN_SCREEN_SIZES = {(2880,1800),(3024,1964),(3456,2234),(2560,1600),(5120,2880),(6016,3384),(4480,2520),(1440,900),(1680,1050),(1920,1200),(2560,1440),(1920,1080),(2560,1080),(3440,1440),(3840,2160),(1366,768),(1536,864),(1600,900),(1280,720),(1280,800),(1024,768),(3840,1080),(5120,1440),(2048,2732),(2732,2048),(2388,1668),(1668,2388),(2360,1640),(1640,2360),(2048,1536),(1536,2048),(1290,2796),(2796,1290),(1179,2556),(2556,1179),(1170,2532),(2532,1170),(1284,2778),(2778,1284),(1125,2436),(2436,1125),(1242,2688),(2688,1242),(750,1334),(1334,750),(1080,1920),(828,1792),(1792,828),(1242,2208),(2208,1242),(1080,2340),(2340,1080),(1440,3200),(3200,1440),(1080,2400),(2400,1080),(1320,2868),(2868,1320),(1206,2622),(2622,1206)}
+KNOWN_SCREEN_WIDTHS = {2880,3024,3456,2560,5120,6016,4480,1440,1680,1920,3440,3840,1366,1536,1600,1280,1024,1290,1179,1170,1284,1125,1242,750,828,1320,1206}
 logger = logging.getLogger("laurence_photos")
 def setup_logging(verbose=False):
     level = logging.DEBUG if verbose else logging.INFO
@@ -40,6 +40,8 @@ def _is_screenshot(filepath, img_meta=None):
         if w and h:
             if (w, h) in KNOWN_SCREEN_SIZES: return True, f"screen_res:{w}x{h}"
             if w in KNOWN_SCREEN_WIDTHS and filepath.suffix.lower() == ".png": return True, f"screen_width_png:{w}"
+        if img_meta.get("apple_device") and filepath.suffix.lower() == ".png" and not img_meta.get("has_gps"):
+            if w and h and (w, h) in KNOWN_SCREEN_SIZES: return True, f"iphone_screenshot:{w}x{h}"
     return False, ""
 def _is_in_personal_folder(filepath):
     path_lower = str(filepath).lower().replace("\\", "/")
@@ -164,14 +166,23 @@ def classify_image(filepath, img_meta=None):
     return {"primary_category": primary, "all_categories": categories, "signals": matched_signals, "confidence": min(scores.get(primary, 0) / 3.0, 1.0) if scores else 0.0}
 def get_image_metadata(filepath):
     stat = filepath.stat()
-    meta = {"size_bytes": stat.st_size, "size_human": _human_size(stat.st_size), "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(), "created": datetime.fromtimestamp(stat.st_ctime).isoformat(), "extension": filepath.suffix.lower(), "has_exif": False}
+    meta = {"size_bytes": stat.st_size, "size_human": _human_size(stat.st_size), "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(), "created": datetime.fromtimestamp(stat.st_ctime).isoformat(), "extension": filepath.suffix.lower(), "has_exif": False, "has_gps": False, "apple_device": False}
     try:
         from PIL import Image
+        from PIL.ExifTags import TAGS
         img = Image.open(filepath)
         meta["width"], meta["height"] = img.size
         meta["format"], meta["mode"] = img.format, img.mode
         exif = img.getexif()
         meta["has_exif"] = bool(exif) and len(exif) > 0
+        if exif:
+            for tag_id, value in exif.items():
+                tag_name = TAGS.get(tag_id, str(tag_id))
+                if "gps" in tag_name.lower(): meta["has_gps"] = True; break
+            make = exif.get(271, "").lower()
+            model = exif.get(272, "").lower()
+            if "apple" in make or "iphone" in model or "ipad" in model:
+                meta["apple_device"] = True
         img.close()
     except Exception: pass
     meta["sha256"] = _file_hash(filepath)
@@ -278,6 +289,30 @@ def run_pipeline(source_dir, output_dir, dry_run=False, verbose=False):
     if not dry_run: logger.info("  Outputs:"); logger.info("    SQLite: %s", db_path); logger.info("    JSONL:  %s", jsonl_path)
     else: logger.info("  (Dry run - no files written)")
     logger.info(""); return dict(stats)
+def install_cron(source, output=None, verbose=False):
+    """Install a crontab entry to run ingestion every Friday at 23:00."""
+    import shutil, subprocess
+    script_path = Path(__file__).resolve()
+    python_path = shutil.which("python3") or sys.executable
+    output_dir = output or Path("./laurence_photos_output")
+    cmd = f'{python_path} {script_path} "{source}" -o "{output_dir}"'
+    if verbose:
+        cmd += " -v"
+    cron_line = f'0 23 * * 5 {cmd} >> "{output_dir}/cron.log" 2>&1'
+    result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+    existing = result.stdout if result.returncode == 0 else ""
+    marker = "# laurence_photos weekly ingest"
+    clean_lines = [line for line in existing.splitlines() if marker not in line and "laurence_photos_ingest" not in line]
+    clean_lines.append(f"{cron_line}  {marker}")
+    new_crontab = "\n".join(clean_lines) + "\n"
+    proc = subprocess.run(["crontab", "-"], input=new_crontab, capture_output=True, text=True)
+    if proc.returncode == 0:
+        logger.info("Cron job installed: every Friday at 23:00")
+        logger.info("  %s", cron_line)
+    else:
+        logger.error("Failed to install cron job: %s", proc.stderr)
+    return proc.returncode == 0
+
 def main():
     parser = argparse.ArgumentParser(description="Laurence Photos - Ingestion Pipeline v1.2", formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("source", type=Path, help="Directory to scan (recursive)")
@@ -285,8 +320,13 @@ def main():
     parser.add_argument("--dry-run", "-n", action="store_true", help="Scan and classify without writing output")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show per-file decisions")
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
+    parser.add_argument("--install-cron", action="store_true", help="Install weekly cron job (Friday 23:00) and exit")
     args = parser.parse_args()
     output = args.output or Path("./laurence_photos_output")
+    if args.install_cron:
+        setup_logging(args.verbose)
+        install_cron(source=args.source.expanduser().resolve(), output=output.expanduser().resolve(), verbose=args.verbose)
+        return
     run_pipeline(source_dir=args.source.expanduser().resolve(), output_dir=output.expanduser().resolve(), dry_run=args.dry_run, verbose=args.verbose)
 if __name__ == "__main__":
     main()

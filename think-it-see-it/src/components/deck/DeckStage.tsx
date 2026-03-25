@@ -9,13 +9,14 @@ import {
   LayoutGrid,
   Rows3,
   Presentation,
+  ArrowLeft,
 } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
 import { SceneCard } from "./SceneCard";
 import { DeckPresenter } from "./DeckPresenter";
 
 export function DeckStage() {
-  const { deck, setDeckFormat, reset } = useProjectStore();
+  const { deck, setDeckFormat, setStage, reset } = useProjectStore();
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [isPresenting, setIsPresenting] = useState(false);
 
@@ -40,6 +41,14 @@ export function DeckStage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
+        {/* Back button */}
+        <button
+          onClick={() => setStage("creative-routes")}
+          className="flex items-center gap-2 text-white/30 hover:text-white/50 transition-all text-sm mb-6"
+        >
+          <ArrowLeft size={14} /> Back to creative routes
+        </button>
+
         {/* Deck Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>

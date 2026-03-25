@@ -25,6 +25,7 @@ interface ProjectStore extends Project {
   selectBrandKit: (id: string | null) => void;
   setDeck: (deck: LivingDeck) => void;
   updateScene: (sceneId: string, updates: Partial<DeckScene>) => void;
+  deleteScene: (sceneId: string) => void;
   setDeckFormat: (format: "pitch" | "workshop") => void;
   reset: () => void;
 }
@@ -66,6 +67,20 @@ export const useProjectStore = create<ProjectStore>((set) => ({
           scenes: state.deck.scenes.map((s) =>
             s.id === sceneId ? { ...s, ...updates } : s
           ),
+        },
+      };
+    }),
+
+  deleteScene: (sceneId) =>
+    set((state) => {
+      if (!state.deck) return state;
+      return {
+        deck: {
+          ...state.deck,
+          updatedAt: Date.now(),
+          scenes: state.deck.scenes
+            .filter((s) => s.id !== sceneId)
+            .map((s, i) => ({ ...s, order: i + 1 })),
         },
       };
     }),

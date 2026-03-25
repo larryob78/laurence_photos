@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Palette, Zap, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Palette, Zap, Sparkles } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
 import { BRAND_KITS } from "@/lib/brand-kits";
 import type { LivingDeck } from "@/lib/types";
@@ -20,6 +20,7 @@ export function CreativeRoutesStage() {
   } = useProjectStore();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [format, setFormat] = useState<"pitch" | "workshop">("pitch");
 
   const handleGenerate = useCallback(async () => {
@@ -29,6 +30,7 @@ export function CreativeRoutesStage() {
 
     const brandKit = BRAND_KITS.find((k) => k.id === selectedBrandKitId);
 
+    setError(null);
     setIsLoading(true);
     setStage("generating-deck");
 
@@ -44,12 +46,13 @@ export function CreativeRoutesStage() {
           brandKit: brandKit || null,
         }),
       });
-      if (!res.ok) throw new Error("Failed to generate deck");
+      if (!res.ok) throw new Error("Failed to generate deck. Please try again.");
       const deck: LivingDeck = await res.json();
       setDeck(deck);
       setStage("deck");
     } catch (err) {
       console.error("Failed to generate deck:", err);
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setStage("creative-routes");
     } finally {
       setIsLoading(false);
@@ -76,6 +79,14 @@ export function CreativeRoutesStage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
+      {/* Back button */}
+      <button
+        onClick={() => setStage("story-shapes")}
+        className="flex items-center gap-2 text-white/30 hover:text-white/50 transition-all text-sm mb-8"
+      >
+        <ArrowLeft size={14} /> Back to story shapes
+      </button>
+
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-white mb-2">Choose your creative route</h2>
         <p className="text-white/40">
@@ -234,6 +245,17 @@ export function CreativeRoutesStage() {
             </div>
           </div>
         </motion.div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <motion.p
+          className="text-rose-400 text-sm mt-6 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {error}
+        </motion.p>
       )}
 
       <motion.div

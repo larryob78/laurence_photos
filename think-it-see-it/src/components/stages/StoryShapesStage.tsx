@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Layers } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Layers } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
 import { ExtractionDisplay } from "@/components/ExtractionDisplay";
 
@@ -17,6 +17,7 @@ export function StoryShapesStage() {
   } = useProjectStore();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleContinue = useCallback(async () => {
     if (!selectedStoryShapeId || !extraction) return;
@@ -24,6 +25,7 @@ export function StoryShapesStage() {
     const shape = storyShapes.find((s) => s.id === selectedStoryShapeId);
     if (!shape) return;
 
+    setError(null);
     setIsLoading(true);
     setStage("creative-routes");
 
@@ -33,11 +35,12 @@ export function StoryShapesStage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extraction, storyShape: shape }),
       });
-      if (!res.ok) throw new Error("Failed to generate creative routes");
+      if (!res.ok) throw new Error("Failed to generate creative routes. Please try again.");
       const routes = await res.json();
       setCreativeRoutes(routes);
     } catch (err) {
       console.error("Failed to generate creative routes:", err);
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setStage("story-shapes");
     } finally {
       setIsLoading(false);
@@ -50,6 +53,14 @@ export function StoryShapesStage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
+      {/* Back button */}
+      <button
+        onClick={() => setStage("input")}
+        className="flex items-center gap-2 text-white/30 hover:text-white/50 transition-all text-sm mb-8"
+      >
+        <ArrowLeft size={14} /> Back to input
+      </button>
+
       {extraction && <ExtractionDisplay extraction={extraction} />}
 
       <div className="mb-8">
@@ -112,6 +123,17 @@ export function StoryShapesStage() {
           </motion.button>
         ))}
       </div>
+
+      {/* Error */}
+      {error && (
+        <motion.p
+          className="text-rose-400 text-sm mt-6 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {error}
+        </motion.p>
+      )}
 
       <motion.div
         className="flex justify-center mt-12"

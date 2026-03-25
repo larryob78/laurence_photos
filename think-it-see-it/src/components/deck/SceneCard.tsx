@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Edit3, Eye, GripVertical, MessageSquare } from "lucide-react";
+import { Edit3, Eye, GripVertical, MessageSquare, Trash2 } from "lucide-react";
 import type { DeckScene } from "@/lib/types";
 import { getSceneInfo } from "@/lib/scene-taxonomy";
 import { useProjectStore } from "@/store/project-store";
@@ -16,6 +16,7 @@ export function SceneCard({ scene, index }: SceneCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const updateScene = useProjectStore((s) => s.updateScene);
+  const deleteScene = useProjectStore((s) => s.deleteScene);
   const info = getSceneInfo(scene.sceneType);
 
   return (
@@ -54,6 +55,13 @@ export function SceneCard({ scene, index }: SceneCardProps) {
             }`}
           >
             {isEditing ? <Eye size={14} /> : <Edit3 size={14} />}
+          </button>
+          <button
+            onClick={() => deleteScene(scene.id)}
+            className="p-2 rounded-lg text-white/10 hover:text-rose-400/60 hover:bg-rose-500/10 transition-all"
+            title="Delete scene"
+          >
+            <Trash2 size={14} />
           </button>
         </div>
       </div>

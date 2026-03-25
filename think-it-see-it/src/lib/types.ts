@@ -1,5 +1,6 @@
 // ============================================================
 // THINK IT. SEE IT. — Core Type System
+// Powered by research data foundation
 // ============================================================
 
 /** The pipeline stages a project moves through */
@@ -10,6 +11,55 @@ export type Stage =
   | "creative-routes"
   | "generating-deck"
   | "deck";
+
+/** All 8 deck types from agency_deck_structures.md */
+export type DeckType =
+  | "pitch"
+  | "strategy"
+  | "campaign"
+  | "credentials"
+  | "innovation"
+  | "workshop"
+  | "case-study"
+  | "keynote";
+
+/** All 24 scene types from scene_taxonomy.csv */
+export type SceneType =
+  | "cover"
+  | "intro"
+  | "overview"
+  | "brief"
+  | "challenge"
+  | "audience"
+  | "market_context"
+  | "insight"
+  | "strategy"
+  | "opportunity"
+  | "proposition"
+  | "route_reveal"
+  | "idea_board"
+  | "execution"
+  | "media_plan"
+  | "timeline"
+  | "production"
+  | "budget"
+  | "case_study"
+  | "quote"
+  | "results"
+  | "provocation"
+  | "exercise"
+  | "divider"
+  | "closing";
+
+/** Layout types from dataset_schemas.json */
+export type LayoutType =
+  | "centred"
+  | "split-left"
+  | "split-right"
+  | "full-bleed"
+  | "editorial"
+  | "grid"
+  | "dashboard";
 
 /** Raw input from the user — voice or text */
 export interface RawInput {
@@ -73,38 +123,25 @@ export interface ExtractionConfidence {
 
 /** Strategic structure extracted from raw input — deep extraction model */
 export interface StrategicExtraction {
-  // Core fields (required)
   brief: string;
   audience: AudienceProfile;
   challenge: string;
-
-  // Strategic fields
   insight?: string;
   opportunity?: string;
   proposition?: string;
-
-  // Context fields
   projectName?: string;
   clientName?: string;
   problem?: string;
   marketContext?: MarketContext;
-
-  // Creative direction
   ideaTerritories?: IdeaTerritory[];
   proof?: string[];
   tone?: ToneDirection;
-
-  // Constraints and unknowns
   constraints?: Constraints;
   unknowns?: string[];
-
-  // Meta
   desiredOutcome?: string;
-  deckType?: "pitch" | "strategy" | "campaign" | "credentials" | "innovation" | "workshop" | "case-study" | "keynote";
+  deckType?: DeckType;
   confidence?: ExtractionConfidence;
   rawSummary: string;
-
-  // Legacy compat — flattened views for simpler UI rendering
   objective: string;
   keyInsights: string[];
   tensions: string[];
@@ -129,12 +166,43 @@ export interface CreativeRoute {
   tonalRegister: string;
   storyShapeId: string;
   scenes: SceneOutline[];
+  risk?: "safe" | "moderate" | "bold";
 }
 
 /** High-level scene outline before full deck generation */
 export interface SceneOutline {
   title: string;
   intent: string;
+}
+
+/** Brand kit color */
+export interface BrandColor {
+  name: string;
+  hex: string;
+  usage?: string;
+}
+
+/** Brand kit for theming decks */
+export interface BrandKit {
+  id: string;
+  name: string;
+  description: string;
+  colors: {
+    primary: BrandColor[];
+    secondary: BrandColor[];
+    neutral: BrandColor[];
+  };
+  typography: {
+    headingFamily: string;
+    bodyFamily: string;
+    headlineStyle: string;
+  };
+  toneOfVoice: {
+    personality: string[];
+    weAre: string[];
+    weAreNot: string[];
+  };
+  visualStyle: string;
 }
 
 /** A fully realized scene in a living deck */
@@ -146,7 +214,8 @@ export interface DeckScene {
   bodyText: string;
   visualDirection: string;
   speakerNotes: string;
-  sceneType: "title" | "insight" | "tension" | "idea" | "evidence" | "action" | "closing";
+  sceneType: SceneType;
+  layout?: LayoutType;
   colorAccent: string;
 }
 
@@ -157,7 +226,9 @@ export interface LivingDeck {
   subtitle: string;
   scenes: DeckScene[];
   creativeRouteId: string;
+  deckType: DeckType;
   format: "pitch" | "workshop";
+  brandKitId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -172,5 +243,6 @@ export interface Project {
   selectedStoryShapeId: string | null;
   creativeRoutes: CreativeRoute[];
   selectedCreativeRouteId: string | null;
+  selectedBrandKitId: string | null;
   deck: LivingDeck | null;
 }

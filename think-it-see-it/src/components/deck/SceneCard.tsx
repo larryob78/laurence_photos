@@ -4,17 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Edit3, Eye, GripVertical, MessageSquare } from "lucide-react";
 import type { DeckScene } from "@/lib/types";
+import { getSceneInfo } from "@/lib/scene-taxonomy";
 import { useProjectStore } from "@/store/project-store";
-
-const SCENE_TYPE_STYLES: Record<DeckScene["sceneType"], { bg: string; label: string }> = {
-  title: { bg: "from-violet-600/20 to-purple-600/20", label: "Title" },
-  insight: { bg: "from-emerald-600/20 to-teal-600/20", label: "Insight" },
-  tension: { bg: "from-rose-600/20 to-orange-600/20", label: "Tension" },
-  idea: { bg: "from-amber-600/20 to-yellow-600/20", label: "Idea" },
-  evidence: { bg: "from-blue-600/20 to-cyan-600/20", label: "Evidence" },
-  action: { bg: "from-green-600/20 to-emerald-600/20", label: "Action" },
-  closing: { bg: "from-purple-600/20 to-pink-600/20", label: "Closing" },
-};
 
 interface SceneCardProps {
   scene: DeckScene;
@@ -25,11 +16,11 @@ export function SceneCard({ scene, index }: SceneCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const updateScene = useProjectStore((s) => s.updateScene);
-  const style = SCENE_TYPE_STYLES[scene.sceneType] || SCENE_TYPE_STYLES.idea;
+  const info = getSceneInfo(scene.sceneType);
 
   return (
     <motion.div
-      className={`relative rounded-2xl border border-white/10 overflow-hidden bg-gradient-to-br ${style.bg}`}
+      className={`relative rounded-2xl border border-white/10 overflow-hidden bg-gradient-to-br ${info.gradient}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -40,11 +31,12 @@ export function SceneCard({ scene, index }: SceneCardProps) {
         <div className="flex items-center gap-3">
           <GripVertical size={14} className="text-white/20 cursor-grab" />
           <span className="text-xs font-mono text-white/30">{String(scene.order).padStart(2, "0")}</span>
-          <span
-            className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/50"
-          >
-            {style.label}
+          <span className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+            {info.label}
           </span>
+          {scene.layout && (
+            <span className="text-[10px] text-white/20">{scene.layout}</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -68,7 +60,6 @@ export function SceneCard({ scene, index }: SceneCardProps) {
 
       {/* Scene content */}
       <div className="px-6 pb-6">
-        {/* Color accent bar */}
         <div
           className="w-12 h-1 rounded-full mb-4"
           style={{ backgroundColor: scene.colorAccent }}
@@ -97,7 +88,9 @@ export function SceneCard({ scene, index }: SceneCardProps) {
           <div>
             <h3 className="text-2xl font-bold text-white mb-1">{scene.headline}</h3>
             <p className="text-white/50 mb-3">{scene.subheadline}</p>
-            <p className="text-white/40 text-sm leading-relaxed">{scene.bodyText}</p>
+            {scene.bodyText && (
+              <p className="text-white/40 text-sm leading-relaxed">{scene.bodyText}</p>
+            )}
           </div>
         )}
 

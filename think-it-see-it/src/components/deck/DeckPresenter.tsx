@@ -3,15 +3,26 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import type { DeckScene } from "@/lib/types";
+import type { DeckScene, SceneType } from "@/lib/types";
+import { getSceneInfo } from "@/lib/scene-taxonomy";
 
-const SCENE_TYPE_STYLES: Record<DeckScene["sceneType"], string> = {
-  title: "from-violet-950 via-purple-950 to-indigo-950",
-  insight: "from-emerald-950 via-teal-950 to-green-950",
-  tension: "from-rose-950 via-red-950 to-orange-950",
-  idea: "from-amber-950 via-yellow-950 to-orange-950",
-  evidence: "from-blue-950 via-cyan-950 to-sky-950",
-  action: "from-green-950 via-emerald-950 to-teal-950",
+/** Map scene types to deep background gradients for presenter mode */
+const PRESENTER_GRADIENTS: Partial<Record<SceneType, string>> = {
+  cover: "from-violet-950 via-purple-950 to-indigo-950",
+  intro: "from-blue-950 via-indigo-950 to-violet-950",
+  brief: "from-sky-950 via-blue-950 to-indigo-950",
+  challenge: "from-rose-950 via-red-950 to-orange-950",
+  audience: "from-teal-950 via-cyan-950 to-blue-950",
+  market_context: "from-gray-950 via-slate-950 to-zinc-950",
+  insight: "from-amber-950 via-yellow-950 to-orange-950",
+  strategy: "from-indigo-950 via-violet-950 to-purple-950",
+  opportunity: "from-emerald-950 via-green-950 to-teal-950",
+  proposition: "from-purple-950 via-fuchsia-950 to-pink-950",
+  route_reveal: "from-orange-950 via-amber-950 to-yellow-950",
+  idea_board: "from-pink-950 via-rose-950 to-red-950",
+  execution: "from-cyan-950 via-blue-950 to-indigo-950",
+  results: "from-emerald-950 via-teal-950 to-cyan-950",
+  provocation: "from-red-950 via-orange-950 to-amber-950",
   closing: "from-purple-950 via-pink-950 to-rose-950",
 };
 
@@ -58,7 +69,8 @@ export function DeckPresenter({ scenes, title, onClose }: DeckPresenterProps) {
 
   if (!scene) return null;
 
-  const bgStyle = SCENE_TYPE_STYLES[scene.sceneType] || SCENE_TYPE_STYLES.idea;
+  const bgStyle = PRESENTER_GRADIENTS[scene.sceneType] || "from-slate-950 via-gray-950 to-zinc-950";
+  const sceneInfo = getSceneInfo(scene.sceneType);
 
   return (
     <motion.div
@@ -74,6 +86,7 @@ export function DeckPresenter({ scenes, title, onClose }: DeckPresenterProps) {
             {currentIndex + 1} / {scenes.length}
           </span>
           <span className="text-white/20 text-sm">{title}</span>
+          <span className="text-white/15 text-xs uppercase tracking-wider">{sceneInfo.label}</span>
         </div>
         <button
           onClick={onClose}

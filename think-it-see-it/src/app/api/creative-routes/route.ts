@@ -14,6 +14,7 @@ export async function POST(req: Request) {
         {
           id: "route-1",
           name: "Burn The Playbook",
+          risk: "bold",
           concept: "A provocative creative direction that literally tears apart category conventions. Every scene deconstructs a 'rule' and replaces it with a bolder truth. The visual world is raw, editorial, and unapologetic.",
           visualWorld: "High-contrast black and white with flashes of neon. Torn paper textures. Bold sans-serif type that breaks the grid. Photography is candid and imperfect.",
           tonalRegister: "Provocative and direct — like a manifesto written on a wall",
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
         {
           id: "route-2",
           name: "The Quiet Revolution",
+          risk: "safe",
           concept: "While competitors shout, this brand whispers. A creative direction built on confidence, understatement, and cultural sophistication. Lets the work speak for itself.",
           visualWorld: "Muted earth tones with moments of deep color. Generous white space. Elegant serif typography. Photography feels cinematic and considered — like stills from an art film.",
           tonalRegister: "Warm and conspiratorial — like sharing a secret with a smart friend",
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
         {
           id: "route-3",
           name: "Culture First",
+          risk: "moderate",
           concept: "A creative direction that starts from culture and works inward. The brand becomes a cultural participant rather than an advertiser. Content-first, community-driven, always relevant.",
           visualWorld: "Vibrant, saturated colors. Mixed media — photography, illustration, user-generated content. Typography that feels social-native. Grid-breaking layouts that feel alive.",
           tonalRegister: "Culturally fluent and energetic — like a smart friend who's always first to the trend",

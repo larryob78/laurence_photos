@@ -15,7 +15,6 @@ function createId(): string {
 }
 
 interface ProjectStore extends Project {
-  // Actions
   setStage: (stage: Stage) => void;
   setRawInput: (input: RawInput) => void;
   setExtraction: (extraction: StrategicExtraction) => void;
@@ -23,6 +22,7 @@ interface ProjectStore extends Project {
   selectStoryShape: (id: string) => void;
   setCreativeRoutes: (routes: CreativeRoute[]) => void;
   selectCreativeRoute: (id: string) => void;
+  selectBrandKit: (id: string | null) => void;
   setDeck: (deck: LivingDeck) => void;
   updateScene: (sceneId: string, updates: Partial<DeckScene>) => void;
   setDeckFormat: (format: "pitch" | "workshop") => void;
@@ -38,6 +38,7 @@ const initialState: Project = {
   selectedStoryShapeId: null,
   creativeRoutes: [],
   selectedCreativeRouteId: null,
+  selectedBrandKitId: null,
   deck: null,
 };
 
@@ -46,19 +47,13 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   id: createId(),
 
   setStage: (stage) => set({ stage }),
-
   setRawInput: (input) => set({ rawInput: input }),
-
   setExtraction: (extraction) => set({ extraction }),
-
   setStoryShapes: (shapes) => set({ storyShapes: shapes }),
-
   selectStoryShape: (id) => set({ selectedStoryShapeId: id }),
-
   setCreativeRoutes: (routes) => set({ creativeRoutes: routes }),
-
   selectCreativeRoute: (id) => set({ selectedCreativeRouteId: id }),
-
+  selectBrandKit: (id) => set({ selectedBrandKitId: id }),
   setDeck: (deck) => set({ deck }),
 
   updateScene: (sceneId, updates) =>

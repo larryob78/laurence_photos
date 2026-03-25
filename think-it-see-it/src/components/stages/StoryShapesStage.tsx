@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Layers } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
+import { ExtractionDisplay } from "@/components/ExtractionDisplay";
 
 export function StoryShapesStage() {
   const {
@@ -49,82 +50,8 @@ export function StoryShapesStage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* Extraction Summary */}
-      {extraction && (
-        <motion.div
-          className="mb-12 bg-white/5 rounded-2xl p-8 border border-white/10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-sm uppercase tracking-wider text-white/40">Strategic Extraction</h3>
-            {extraction.deckType && (
-              <span className="text-xs uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500/20 text-violet-300">
-                {extraction.deckType}
-              </span>
-            )}
-          </div>
-          <p className="text-xl text-white/90 font-medium mb-2">{extraction.objective}</p>
-          {extraction.challenge && (
-            <p className="text-white/50 text-sm mb-4">{extraction.challenge}</p>
-          )}
-          {extraction.insight && (
-            <div className="bg-white/5 rounded-xl p-4 mb-6 border-l-2 border-amber-400/40">
-              <p className="text-xs uppercase tracking-wider text-amber-400/50 mb-1">Core Insight</p>
-              <p className="text-white/80 text-sm italic">{extraction.insight}</p>
-            </div>
-          )}
-          <div className="grid md:grid-cols-2 gap-6 mt-6">
-            <div>
-              <p className="text-xs uppercase tracking-wider text-violet-400/60 mb-2">Audience</p>
-              <p className="text-white/70 text-sm">
-                {typeof extraction.audience === "string"
-                  ? extraction.audience
-                  : extraction.audience?.primary || "Not specified"}
-              </p>
-              {typeof extraction.audience === "object" && extraction.audience?.psychographics && (
-                <p className="text-white/40 text-xs mt-1">{extraction.audience.psychographics}</p>
-              )}
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wider text-violet-400/60 mb-2">Tone</p>
-              <p className="text-white/70 text-sm">
-                {typeof extraction.tone === "string"
-                  ? extraction.tone
-                  : extraction.tone?.attributes?.join(", ") || "Not specified"}
-              </p>
-              {typeof extraction.tone === "object" && extraction.tone?.avoid && extraction.tone.avoid.length > 0 && (
-                <p className="text-white/30 text-xs mt-1">Avoid: {extraction.tone.avoid.join(", ")}</p>
-              )}
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wider text-emerald-400/60 mb-2">Key Insights</p>
-              <ul className="space-y-1">
-                {extraction.keyInsights.map((insight, i) => (
-                  <li key={i} className="text-white/60 text-sm flex gap-2">
-                    <span className="text-emerald-400/40 mt-0.5">-</span>
-                    {insight}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wider text-rose-400/60 mb-2">Tensions</p>
-              <ul className="space-y-1">
-                {extraction.tensions.map((tension, i) => (
-                  <li key={i} className="text-white/60 text-sm flex gap-2">
-                    <span className="text-rose-400/40 mt-0.5">-</span>
-                    {tension}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      {extraction && <ExtractionDisplay extraction={extraction} />}
 
-      {/* Story Shapes */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-white mb-2">Choose your story shape</h2>
         <p className="text-white/40">
@@ -166,7 +93,6 @@ export function StoryShapesStage() {
                 <h3 className="text-xl font-semibold text-white mb-2">{shape.name}</h3>
                 <p className="text-white/60 mb-4">{shape.description}</p>
 
-                {/* Arc visualization */}
                 <div className="flex items-center gap-2 flex-wrap mb-4">
                   {shape.arc.map((step, i) => (
                     <div key={i} className="flex items-center gap-2">
@@ -187,7 +113,6 @@ export function StoryShapesStage() {
         ))}
       </div>
 
-      {/* Continue */}
       <motion.div
         className="flex justify-center mt-12"
         initial={{ opacity: 0 }}

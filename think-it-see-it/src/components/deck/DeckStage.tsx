@@ -135,12 +135,22 @@ export function DeckStage() {
           </div>
         </div>
 
-        {/* Scene count */}
-        <div className="flex items-center gap-3 mb-8">
+        {/* Scene count + deck type */}
+        <div className="flex items-center gap-3 mb-8 flex-wrap">
           <Presentation size={16} className="text-white/20" />
           <span className="text-white/30 text-sm">
             {deck.scenes.length} scenes &middot; {deck.format} format
           </span>
+          {deck.deckType && (
+            <span className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400/50">
+              {deck.deckType}
+            </span>
+          )}
+          {deck.brandKitId && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/30">
+              Brand Kit Applied
+            </span>
+          )}
         </div>
 
         {/* Scenes */}

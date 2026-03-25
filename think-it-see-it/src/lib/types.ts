@@ -18,15 +18,97 @@ export interface RawInput {
   timestamp: number;
 }
 
-/** Strategic structure extracted from raw input */
+/** Audience profile extracted from input */
+export interface AudienceProfile {
+  primary: string;
+  secondary?: string;
+  demographics?: string;
+  psychographics?: string;
+  behaviours?: string;
+}
+
+/** Market context extracted from input */
+export interface MarketContext {
+  category?: string;
+  competitors?: string[];
+  trends?: string[];
+  categoryState?: string;
+}
+
+/** Constraints on the work */
+export interface Constraints {
+  budget?: string;
+  timeline?: string;
+  channels?: string[];
+  legal?: string;
+  brand?: string;
+  stakeholder?: string;
+  other?: string[];
+}
+
+/** Tone direction */
+export interface ToneDirection {
+  attributes: string[];
+  references?: string[];
+  avoid?: string[];
+}
+
+/** Idea territory floated in the input */
+export interface IdeaTerritory {
+  name: string;
+  description: string;
+  tone?: string;
+  risk?: "safe" | "moderate" | "bold";
+}
+
+/** Per-field extraction confidence */
+export interface ExtractionConfidence {
+  brief: number;
+  audience: number;
+  challenge: number;
+  insight: number;
+  proposition: number;
+  tone: number;
+}
+
+/** Strategic structure extracted from raw input — deep extraction model */
 export interface StrategicExtraction {
+  // Core fields (required)
+  brief: string;
+  audience: AudienceProfile;
+  challenge: string;
+
+  // Strategic fields
+  insight?: string;
+  opportunity?: string;
+  proposition?: string;
+
+  // Context fields
+  projectName?: string;
+  clientName?: string;
+  problem?: string;
+  marketContext?: MarketContext;
+
+  // Creative direction
+  ideaTerritories?: IdeaTerritory[];
+  proof?: string[];
+  tone?: ToneDirection;
+
+  // Constraints and unknowns
+  constraints?: Constraints;
+  unknowns?: string[];
+
+  // Meta
+  desiredOutcome?: string;
+  deckType?: "pitch" | "strategy" | "campaign" | "credentials" | "innovation" | "workshop" | "case-study" | "keynote";
+  confidence?: ExtractionConfidence;
+  rawSummary: string;
+
+  // Legacy compat — flattened views for simpler UI rendering
   objective: string;
-  audience: string;
   keyInsights: string[];
   tensions: string[];
   opportunities: string[];
-  tone: string;
-  rawSummary: string;
 }
 
 /** A narrative structure template */

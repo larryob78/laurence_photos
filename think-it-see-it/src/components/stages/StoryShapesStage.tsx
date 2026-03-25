@@ -57,16 +57,46 @@ export function StoryShapesStage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
         >
-          <h3 className="text-sm uppercase tracking-wider text-white/40 mb-4">Strategic Extraction</h3>
-          <p className="text-xl text-white/90 font-medium mb-4">{extraction.objective}</p>
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-sm uppercase tracking-wider text-white/40">Strategic Extraction</h3>
+            {extraction.deckType && (
+              <span className="text-xs uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500/20 text-violet-300">
+                {extraction.deckType}
+              </span>
+            )}
+          </div>
+          <p className="text-xl text-white/90 font-medium mb-2">{extraction.objective}</p>
+          {extraction.challenge && (
+            <p className="text-white/50 text-sm mb-4">{extraction.challenge}</p>
+          )}
+          {extraction.insight && (
+            <div className="bg-white/5 rounded-xl p-4 mb-6 border-l-2 border-amber-400/40">
+              <p className="text-xs uppercase tracking-wider text-amber-400/50 mb-1">Core Insight</p>
+              <p className="text-white/80 text-sm italic">{extraction.insight}</p>
+            </div>
+          )}
           <div className="grid md:grid-cols-2 gap-6 mt-6">
             <div>
               <p className="text-xs uppercase tracking-wider text-violet-400/60 mb-2">Audience</p>
-              <p className="text-white/70 text-sm">{extraction.audience}</p>
+              <p className="text-white/70 text-sm">
+                {typeof extraction.audience === "string"
+                  ? extraction.audience
+                  : extraction.audience?.primary || "Not specified"}
+              </p>
+              {typeof extraction.audience === "object" && extraction.audience?.psychographics && (
+                <p className="text-white/40 text-xs mt-1">{extraction.audience.psychographics}</p>
+              )}
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-violet-400/60 mb-2">Tone</p>
-              <p className="text-white/70 text-sm">{extraction.tone}</p>
+              <p className="text-white/70 text-sm">
+                {typeof extraction.tone === "string"
+                  ? extraction.tone
+                  : extraction.tone?.attributes?.join(", ") || "Not specified"}
+              </p>
+              {typeof extraction.tone === "object" && extraction.tone?.avoid && extraction.tone.avoid.length > 0 && (
+                <p className="text-white/30 text-xs mt-1">Avoid: {extraction.tone.avoid.join(", ")}</p>
+              )}
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-emerald-400/60 mb-2">Key Insights</p>

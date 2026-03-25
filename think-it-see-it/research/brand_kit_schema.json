@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BrandKit",
+  "description": "Normalized brand guideline schema for THINK IT. SEE IT. product ingestion. Captures the essential elements needed to generate on-brand presentations.",
+  "type": "object",
+  "required": ["id", "brandName", "colorPalette", "typography"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the brand kit"
+    },
+    "brandName": {
+      "type": "string",
+      "description": "The brand or client name this kit represents"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the brand kit (e.g., '2024-Q1')"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+
+    "logo": {
+      "type": "object",
+      "description": "Logo usage specifications",
+      "properties": {
+        "primary": {
+          "type": "object",
+          "properties": {
+            "assetId": { "type": "string", "description": "Reference to uploaded logo asset" },
+            "format": { "type": "string", "enum": ["svg", "png", "eps"] },
+            "clearSpace": { "type": "string", "description": "Minimum clear space rule (e.g., '1x height of logomark')" },
+            "minSize": { "type": "string", "description": "Minimum reproduction size (e.g., '24px height digital, 10mm print')" }
+          }
+        },
+        "secondary": {
+          "type": "object",
+          "properties": {
+            "assetId": { "type": "string" },
+            "format": { "type": "string", "enum": ["svg", "png", "eps"] },
+            "useCase": { "type": "string", "description": "When to use the secondary mark" }
+          }
+        },
+        "icon": {
+          "type": "object",
+          "properties": {
+            "assetId": { "type": "string" },
+            "format": { "type": "string", "enum": ["svg", "png"] },
+            "useCase": { "type": "string", "description": "Favicon, app icon, social avatar" }
+          }
+        },
+        "donts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of logo misuse rules (e.g., 'Do not stretch', 'Do not recolor')"
+        }
+      }
+    },
+
+    "colorPalette": {
+      "type": "object",
+      "description": "Brand colour system",
+      "required": ["primary"],
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "hex"],
+            "properties": {
+              "name": { "type": "string", "description": "Colour name (e.g., 'Brand Blue')" },
+              "hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+              "rgb": { "type": "string" },
+              "cmyk": { "type": "string" },
+              "pantone": { "type": "string" },
+              "usage": { "type": "string", "description": "When to use this colour (e.g., 'Headlines and CTAs')" }
+            }
+          }
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "hex"],
+            "properties": {
+              "name": { "type": "string" },
+              "hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+              "rgb": { "type": "string" },
+              "usage": { "type": "string" }
+            }
+          }
+        },
+        "neutral": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "hex"],
+            "properties": {
+              "name": { "type": "string" },
+              "hex": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+              "usage": { "type": "string" }
+            }
+          }
+        },
+        "gradients": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "stops": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "hex": { "type": "string" },
+                    "position": { "type": "number", "minimum": 0, "maximum": 100 }
+                  }
+                }
+              },
+              "direction": { "type": "string", "description": "e.g., '135deg', 'to right'" }
+            }
+          }
+        },
+        "backgroundRules": {
+          "type": "string",
+          "description": "Rules for background colour usage (e.g., 'Always use Brand White for body backgrounds')"
+        }
+      }
+    },
+
+    "typography": {
+      "type": "object",
+      "description": "Type system specification",
+      "required": ["headingFamily"],
+      "properties": {
+        "headingFamily": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "description": "Font family name (e.g., 'GT Walsheim')" },
+            "weights": { "type": "array", "items": { "type": "string" }, "description": "Available weights (e.g., ['Bold', 'Black'])" },
+            "fallback": { "type": "string", "description": "System fallback stack" },
+            "source": { "type": "string", "enum": ["licensed", "google-fonts", "open-source", "custom"], "description": "Font licensing source" }
+          }
+        },
+        "bodyFamily": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "weights": { "type": "array", "items": { "type": "string" } },
+            "fallback": { "type": "string" },
+            "source": { "type": "string", "enum": ["licensed", "google-fonts", "open-source", "custom"] }
+          }
+        },
+        "accentFamily": {
+          "type": "object",
+          "description": "Optional third font for quotes, callouts, or emphasis",
+          "properties": {
+            "name": { "type": "string" },
+            "weights": { "type": "array", "items": { "type": "string" } },
+            "useCase": { "type": "string" }
+          }
+        },
+        "scale": {
+          "type": "object",
+          "description": "Type scale for presentations",
+          "properties": {
+            "h1": { "type": "string", "description": "e.g., '72px / Bold'" },
+            "h2": { "type": "string" },
+            "h3": { "type": "string" },
+            "body": { "type": "string" },
+            "caption": { "type": "string" },
+            "label": { "type": "string" }
+          }
+        },
+        "lineHeightRatio": { "type": "number", "description": "Default line height multiplier (e.g., 1.4)" },
+        "letterSpacingRules": { "type": "string", "description": "e.g., 'Headings: -0.02em, Body: 0'" }
+      }
+    },
+
+    "spacing": {
+      "type": "object",
+      "description": "Spacing and grid system",
+      "properties": {
+        "baseUnit": { "type": "number", "description": "Base spacing unit in pixels (e.g., 8)" },
+        "margins": {
+          "type": "object",
+          "properties": {
+            "slide": { "type": "string", "description": "Margin around slide content (e.g., '64px')" },
+            "section": { "type": "string", "description": "Space between content sections" }
+          }
+        },
+        "grid": {
+          "type": "object",
+          "properties": {
+            "columns": { "type": "number" },
+            "gutter": { "type": "string" },
+            "system": { "type": "string", "description": "e.g., '12-column' or '16:9 presentation grid'" }
+          }
+        }
+      }
+    },
+
+    "imageStyle": {
+      "type": "object",
+      "description": "Photography and image treatment rules",
+      "properties": {
+        "style": { "type": "string", "description": "Overall image style (e.g., 'Candid, warm, natural light')" },
+        "colorTreatment": { "type": "string", "description": "e.g., 'Desaturated with warm tint', 'High contrast B&W'" },
+        "subjectMatter": { "type": "array", "items": { "type": "string" }, "description": "Preferred subjects (e.g., ['People in motion', 'Urban environments'])" },
+        "avoid": { "type": "array", "items": { "type": "string" }, "description": "Image styles to avoid (e.g., ['Stock-looking poses', 'Cliché handshakes'])" },
+        "overlayRules": { "type": "string", "description": "How text overlays on images (e.g., 'Dark gradient overlay, text bottom-left')" },
+        "cornerRadius": { "type": "string", "description": "e.g., '0px' (sharp) or '16px' (rounded)" }
+      }
+    },
+
+    "iconography": {
+      "type": "object",
+      "description": "Icon system rules",
+      "properties": {
+        "style": { "type": "string", "description": "e.g., 'Line icons, 2px stroke, rounded caps'" },
+        "set": { "type": "string", "description": "Icon set name (e.g., 'Phosphor', 'Custom')" },
+        "size": { "type": "string", "description": "Default icon size (e.g., '24px')" },
+        "color": { "type": "string", "description": "Default icon colour (e.g., 'Brand Primary')" }
+      }
+    },
+
+    "toneOfVoice": {
+      "type": "object",
+      "description": "Brand verbal identity",
+      "properties": {
+        "personality": { "type": "array", "items": { "type": "string" }, "description": "3–5 personality traits (e.g., ['Bold', 'Warm', 'Direct'])" },
+        "weAre": { "type": "array", "items": { "type": "string" }, "description": "Positive tone attributes" },
+        "weAreNot": { "type": "array", "items": { "type": "string" }, "description": "Tone attributes to avoid" },
+        "vocabularyPreferences": { "type": "array", "items": { "type": "string" }, "description": "Preferred words or phrases" },
+        "vocabularyAvoid": { "type": "array", "items": { "type": "string" }, "description": "Words or phrases to never use" },
+        "headlineStyle": { "type": "string", "description": "e.g., 'Short, punchy, no periods. Title case.'" },
+        "bodyStyle": { "type": "string", "description": "e.g., 'Conversational, second person, sentence case.'" }
+      }
+    },
+
+    "motion": {
+      "type": "object",
+      "description": "Animation and transition rules",
+      "properties": {
+        "transitionStyle": { "type": "string", "description": "e.g., 'Smooth crossfade, 400ms ease-out'" },
+        "enterAnimation": { "type": "string", "description": "How elements enter (e.g., 'Fade up from bottom, staggered')" },
+        "exitAnimation": { "type": "string" },
+        "easingCurve": { "type": "string", "description": "e.g., 'cubic-bezier(0.25, 0.1, 0.25, 1)'" },
+        "avoid": { "type": "array", "items": { "type": "string" }, "description": "Animations to avoid (e.g., ['Bounce', 'Spin', 'Flash'])" }
+      }
+    },
+
+    "layoutRules": {
+      "type": "object",
+      "description": "Presentation layout patterns",
+      "properties": {
+        "preferredLayouts": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["centred", "split-left", "split-right", "full-bleed", "editorial", "grid", "dashboard"] },
+          "description": "Approved layout patterns"
+        },
+        "alignment": { "type": "string", "description": "e.g., 'Left-aligned body, centred headings'" },
+        "aspectRatio": { "type": "string", "description": "Presentation aspect ratio (e.g., '16:9', '4:3')" },
+        "maxElementsPerScene": { "type": "number", "description": "Maximum visual elements per scene for clarity" }
+      }
+    },
+
+    "dosAndDonts": {
+      "type": "object",
+      "description": "Explicit brand application rules",
+      "properties": {
+        "dos": { "type": "array", "items": { "type": "string" } },
+        "donts": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

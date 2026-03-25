@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, ArrowLeft, Check, Palette, Zap, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, ArrowLeft, Check, Palette, Zap, Sparkles, Plus } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
 import { BRAND_KITS } from "@/lib/brand-kits";
-import type { LivingDeck } from "@/lib/types";
+import { BrandKitCreator } from "@/components/BrandKitCreator";
+import type { LivingDeck, BrandKit } from "@/lib/types";
 
 export function CreativeRoutesStage() {
   const {
@@ -22,13 +23,16 @@ export function CreativeRoutesStage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [format, setFormat] = useState<"pitch" | "workshop">("pitch");
+  const [showBrandKitCreator, setShowBrandKitCreator] = useState(false);
+  const [customKits, setCustomKits] = useState<BrandKit[]>([]);
+  const allKits = [...BRAND_KITS, ...customKits];
 
   const handleGenerate = useCallback(async () => {
     if (!selectedCreativeRouteId || !extraction) return;
     const route = creativeRoutes.find((r) => r.id === selectedCreativeRouteId);
     if (!route) return;
 
-    const brandKit = BRAND_KITS.find((k) => k.id === selectedBrandKitId);
+    const brandKit = allKits.find((k) => k.id === selectedBrandKitId);
 
     setError(null);
     setIsLoading(true);
@@ -57,7 +61,7 @@ export function CreativeRoutesStage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCreativeRouteId, extraction, creativeRoutes, format, selectedBrandKitId, setDeck, setStage]);
+  }, [selectedCreativeRouteId, extraction, creativeRoutes, format, selectedBrandKitId, allKits, setDeck, setStage]);
 
   if (creativeRoutes.length === 0) {
     return (
@@ -180,8 +184,8 @@ export function CreativeRoutesStage() {
             <p className="text-white/40 text-sm uppercase tracking-wider text-center mb-4 flex items-center justify-center gap-2">
               <Sparkles size={14} /> Brand Kit
             </p>
-            <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-              {BRAND_KITS.map((kit) => (
+            <div className="grid md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              {allKits.map((kit) => (
                 <button
                   key={kit.id}
                   onClick={() => selectBrandKit(selectedBrandKitId === kit.id ? null : kit.id)}
@@ -214,8 +218,30 @@ export function CreativeRoutesStage() {
                   <p className="text-white/30 text-xs mt-0.5">{kit.description}</p>
                 </button>
               ))}
+              {/* Create custom kit */}
+              <button
+                onClick={() => setShowBrandKitCreator(true)}
+                className="p-4 rounded-xl border border-dashed border-white/10 hover:border-white/20 text-white/30 hover:text-white/50 transition-all flex flex-col items-center justify-center gap-2"
+              >
+                <Plus size={20} />
+                <p className="text-xs">Custom Kit</p>
+              </button>
             </div>
             <p className="text-center text-white/20 text-xs mt-2">Optional — affects visual direction and tone</p>
+
+            {/* Brand Kit Creator Modal */}
+            <AnimatePresence>
+              {showBrandKitCreator && (
+                <BrandKitCreator
+                  onSave={(kit) => {
+                    setCustomKits((prev) => [...prev, kit]);
+                    selectBrandKit(kit.id);
+                    setShowBrandKitCreator(false);
+                  }}
+                  onClose={() => setShowBrandKitCreator(false)}
+                />
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Format */}

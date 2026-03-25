@@ -18,6 +18,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
   const [interimTranscript, setInterimTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const finalizedCountRef = useRef(0);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -34,20 +35,25 @@ export function useVoiceInput(): UseVoiceInputReturn {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
+    finalizedCountRef.current = 0;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
-      let final = "";
+      let newFinal = "";
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript + " ";
+          // Only append results we haven't already processed
+          if (i >= finalizedCountRef.current) {
+            newFinal += result[0].transcript + " ";
+            finalizedCountRef.current = i + 1;
+          }
         } else {
           interim += result[0].transcript;
         }
       }
-      if (final) {
-        setTranscript((prev) => prev + final);
+      if (newFinal) {
+        setTranscript((prev) => prev + newFinal);
       }
       setInterimTranscript(interim);
     };

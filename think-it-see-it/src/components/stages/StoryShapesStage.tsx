@@ -32,6 +32,7 @@ export function StoryShapesStage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extraction, storyShape: shape }),
       });
+      if (!res.ok) throw new Error("Failed to generate creative routes");
       const routes = await res.json();
       setCreativeRoutes(routes);
     } catch (err) {

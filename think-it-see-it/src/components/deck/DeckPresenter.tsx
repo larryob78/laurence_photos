@@ -42,8 +42,14 @@ export function DeckPresenter({ scenes, title, onClose }: DeckPresenterProps) {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === " ") goNext();
-      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        goNext();
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrev();
+      }
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKey);

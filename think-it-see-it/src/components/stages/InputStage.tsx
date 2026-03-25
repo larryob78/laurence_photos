@@ -45,6 +45,7 @@ export function InputStage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extraction }),
       });
+      if (!res.ok) throw new Error("Failed to generate story shapes");
       const shapes = await res.json();
       setStoryShapes(shapes);
       setStage("story-shapes");

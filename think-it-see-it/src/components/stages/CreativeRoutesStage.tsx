@@ -33,6 +33,7 @@ export function CreativeRoutesStage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extraction, route, format }),
       });
+      if (!res.ok) throw new Error("Failed to generate deck");
       const deck: LivingDeck = await res.json();
       setDeck(deck);
       setStage("deck");

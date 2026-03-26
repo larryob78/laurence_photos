@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VoiceExtractionModel",
+  "description": "Structured extraction model for spoken agency conversations. Defines what the AI should extract from messy voice/text input to power the THINK IT. SEE IT. pipeline.",
+  "type": "object",
+  "required": ["brief", "audience", "challenge"],
+  "properties": {
+
+    "projectName": {
+      "type": "string",
+      "description": "The name of the project, campaign, or initiative.",
+      "extractionGuidance": "Look for explicit naming ('This is the X project') or infer from context. If multiple names mentioned, use the most recent or most specific.",
+      "examples": ["Brand Relaunch 2025", "Summer Campaign", "The Trust Project"],
+      "ambiguities": "Speaker may refer to internal codenames vs. client-facing names. Extract both if present.",
+      "validation": "Non-empty string. Flag if not detected — prompt user to confirm."
+    },
+
+    "clientName": {
+      "type": "string",
+      "description": "The client or brand the work is for.",
+      "extractionGuidance": "Usually stated early. Look for 'for [client]', 'the client is', or brand name mentions.",
+      "examples": ["Nike", "Unilever Home Care", "NHS England"],
+      "ambiguities": "Parent company vs. sub-brand vs. product line. Extract the most specific entity mentioned.",
+      "validation": "Non-empty string. Cross-reference with any brand kit loaded."
+    },
+
+    "brief": {
+      "type": "string",
+      "description": "The core brief or task — what the client has asked for, in plain language.",
+      "extractionGuidance": "Look for 'the brief is', 'they want us to', 'the ask is', 'we need to'. Often stated early but may be refined throughout the conversation. Use the most complete version.",
+      "examples": [
+        "Reposition the brand for a younger audience without alienating existing customers",
+        "Create a launch campaign for a new product line entering a crowded market",
+        "Develop a thought leadership platform that establishes the CEO as an industry voice"
+      ],
+      "ambiguities": "Speaker may describe the brief indirectly ('they're struggling with X' = the brief is to solve X). Multiple briefs may be mentioned — extract the primary one and note secondary asks.",
+      "validation": "Required. Must be at least 10 words. If not detected, the pipeline cannot proceed — prompt user."
+    },
+
+    "audience": {
+      "type": "object",
+      "description": "Who the work is for — the people it needs to reach and move.",
+      "required": ["primary"],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "The primary target audience.",
+          "examples": ["Gen Z women 18–24 who are fitness-curious but gym-averse", "CFOs at mid-market SaaS companies making platform decisions"]
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Secondary audience if mentioned."
+        },
+        "demographics": {
+          "type": "string",
+          "description": "Age, gender, income, geography — whatever was mentioned."
+        },
+        "psychographics": {
+          "type": "string",
+          "description": "Values, attitudes, beliefs, lifestyle — the deeper profile."
+        },
+        "behaviours": {
+          "type": "string",
+          "description": "What they do — media habits, purchase patterns, cultural participation."
+        }
+      },
+      "extractionGuidance": "Listen for 'the audience is', 'we're talking to', 'these people', 'the target'. Speakers often describe audiences through stories or stereotypes — extract the underlying profile.",
+      "ambiguities": "Internal stakeholders (the people approving the work) vs. external audience (the people seeing the work). Extract external audience as primary. Note internal stakeholders separately if mentioned.",
+      "validation": "Required. At minimum, primary audience must be populated."
+    },
+
+    "challenge": {
+      "type": "string",
+      "description": "The core business, brand, or communication challenge the work must overcome.",
+      "extractionGuidance": "Look for 'the problem is', 'the challenge is', 'what's hard is', 'the tension is'. Often stated as a frustration or complaint. May need to be synthesized from multiple scattered mentions.",
+      "examples": [
+        "The brand is seen as outdated by younger consumers but can't afford to lose its loyal base",
+        "Low awareness in a saturated category where every competitor says the same thing",
+        "Internal misalignment between what the brand promises and what the product actually delivers"
+      ],
+      "ambiguities": "Speakers often conflate symptoms (low sales) with root causes (irrelevant positioning). Extract the deeper challenge, not just the surface symptom.",
+      "validation": "Required. Must be a substantive statement, not just 'sales are down'."
+    },
+
+    "problem": {
+      "type": "string",
+      "description": "The specific problem to be solved — more tactical than the challenge.",
+      "extractionGuidance": "Distinguish from challenge: challenge is strategic ('brand relevance'), problem is tactical ('need a campaign by Q3'). May overlap.",
+      "examples": [
+        "Need to launch in 6 markets simultaneously with a single creative platform",
+        "The website doesn't convert because the value proposition is unclear"
+      ],
+      "ambiguities": "May be identical to challenge for simpler briefs. Extract separately only if the speaker distinguishes them.",
+      "validation": "Optional. If identical to challenge, merge."
+    },
+
+    "marketContext": {
+      "type": "object",
+      "description": "The competitive, cultural, and market landscape.",
+      "properties": {
+        "category": { "type": "string", "description": "The market category (e.g., 'premium skincare', 'B2B fintech')" },
+        "competitors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Named competitors mentioned"
+        },
+        "trends": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Market or cultural trends cited"
+        },
+        "categoryState": { "type": "string", "description": "Overall state of the category (e.g., 'commoditized', 'rapidly growing', 'declining trust')" }
+      },
+      "extractionGuidance": "Listen for competitor names, category descriptions, trend references. Speakers often reference competitors indirectly ('everyone else is doing X').",
+      "ambiguities": "Aspirational competitors (who they want to be like) vs. direct competitors (who they compete with). Extract both and label.",
+      "validation": "Optional but strongly recommended for strategy decks."
+    },
+
+    "insight": {
+      "type": "string",
+      "description": "The core human, cultural, or market insight that unlocks the strategy. The single most important extraction for creative work.",
+      "extractionGuidance": "Listen for 'the insight is', 'what we found is', 'the truth is', 'people don't realize'. Also listen for anecdotes, stories, or observations that reveal a deeper truth. The insight is often the thing the speaker gets most animated about.",
+      "examples": [
+        "People don't want to be healthy — they want to feel in control",
+        "In B2B, the real decision-maker isn't the buyer — it's the person who has to use the product daily",
+        "Luxury used to mean exclusion. Now it means access to experiences others can't get."
+      ],
+      "ambiguities": "Data points are not insights. 'Sales are up 20%' is data. 'People buy more when they feel part of a community' is an insight. Extract the human truth, not the statistic.",
+      "validation": "Optional but critical for quality. If not stated, the system should attempt to synthesize one from the available inputs and flag it as 'system-generated' for user review."
+    },
+
+    "opportunity": {
+      "type": "string",
+      "description": "The strategic opportunity the brand can own.",
+      "extractionGuidance": "Look for 'the opportunity is', 'the white space is', 'nobody is doing', 'we could own'. Often framed as a gap between what exists and what could exist.",
+      "examples": [
+        "No brand in the category speaks to the emotional side of the decision — everyone leads with features",
+        "There's a cultural shift toward transparency that this brand is uniquely positioned to lead"
+      ],
+      "ambiguities": "Opportunity vs. insight: insight is the truth, opportunity is what you do with it. They're related but distinct.",
+      "validation": "Optional. If not extracted, can be generated from insight + challenge."
+    },
+
+    "proposition": {
+      "type": "string",
+      "description": "The core brand or campaign proposition — the single organising thought.",
+      "extractionGuidance": "Listen for 'the proposition is', 'the idea is', 'the territory is', 'the positioning is'. Usually stated concisely. If the speaker rambles, extract the tightest version.",
+      "examples": [
+        "Own the conversation about responsible innovation",
+        "Make fitness feel like self-care, not self-punishment",
+        "The bank that proves trust, not just promises it"
+      ],
+      "ambiguities": "Proposition vs. tagline vs. campaign idea. Proposition is the strategic thought. Tagline is the expression. Campaign idea is the creative execution. Extract the proposition specifically.",
+      "validation": "Optional. For pitch decks and campaign decks, this is critical."
+    },
+
+    "ideaTerritories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Territory name or label" },
+          "description": { "type": "string", "description": "What this territory explores" },
+          "tone": { "type": "string", "description": "Tonal direction" },
+          "risk": { "type": "string", "enum": ["safe", "moderate", "bold"], "description": "How creatively brave this territory is" }
+        }
+      },
+      "description": "Creative territories or directions mentioned or implied.",
+      "extractionGuidance": "Listen for 'we could go in the direction of', 'one route might be', 'what if we'. Speakers often float ideas without labelling them as territories — extract and name them.",
+      "ambiguities": "Half-formed ideas vs. deliberate territories. Extract anything that sounds like a creative direction, even if embryonic.",
+      "validation": "Optional. Used to seed creative route generation."
+    },
+
+    "proof": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Evidence, data points, or proof points mentioned.",
+      "extractionGuidance": "Listen for statistics, research references, case studies, benchmarks, test results. Also extract anecdotal evidence and expert opinions.",
+      "examples": [
+        "NPS increased 15 points after the last campaign",
+        "According to Kantar, trust in the category is at an all-time low",
+        "We tested this concept with 200 users and 78% preferred it"
+      ],
+      "validation": "Optional. Flag unverified claims."
+    },
+
+    "constraints": {
+      "type": "object",
+      "description": "Known limitations on the work.",
+      "properties": {
+        "budget": { "type": "string", "description": "Budget range or constraint mentioned" },
+        "timeline": { "type": "string", "description": "Deadline or phasing mentioned" },
+        "channels": { "type": "array", "items": { "type": "string" }, "description": "Required or excluded channels" },
+        "legal": { "type": "string", "description": "Regulatory or legal constraints" },
+        "brand": { "type": "string", "description": "Brand constraints or sacred cows" },
+        "stakeholder": { "type": "string", "description": "Internal politics or approval constraints" },
+        "other": { "type": "array", "items": { "type": "string" } }
+      },
+      "extractionGuidance": "Listen for 'we can't', 'the budget is', 'by when', 'they won't approve', 'we have to include'. Constraints are often mentioned casually — capture them all.",
+      "validation": "Optional. Each constraint should be actionable."
+    },
+
+    "unknowns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Things the speaker doesn't know yet — gaps, open questions, pending research.",
+      "extractionGuidance": "Listen for 'I'm not sure', 'we need to find out', 'TBD', 'the question is', 'we're waiting on'. Also infer unknowns from vague statements.",
+      "examples": [
+        "We don't know the exact media budget yet",
+        "Still waiting on consumer research from the client",
+        "Not sure if the CEO will approve anything bold"
+      ],
+      "validation": "Optional. Surfacing unknowns early improves deck quality."
+    },
+
+    "tone": {
+      "type": "object",
+      "description": "Desired tonal direction for the work.",
+      "properties": {
+        "attributes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "3–5 tonal attributes (e.g., ['Bold', 'Warm', 'Provocative'])"
+        },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tonal references — brands, campaigns, or cultural touchpoints cited"
+        },
+        "avoid": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tones to avoid (e.g., ['Corporate', 'Preachy', 'Ironic'])"
+        }
+      },
+      "extractionGuidance": "Listen for 'the tone should be', 'like [reference]', 'not too [attribute]', 'think [brand/campaign]'. Also infer tone from the speaker's own energy and language.",
+      "validation": "Optional. Defaults to 'Confident and clear' if not specified."
+    },
+
+    "desiredOutcome": {
+      "type": "string",
+      "description": "What the speaker wants to achieve with this presentation specifically.",
+      "extractionGuidance": "Listen for 'the goal is', 'we need them to', 'by the end they should', 'we want approval for'. This is about the presentation's purpose, not the campaign's KPIs.",
+      "examples": [
+        "Get the CMO to approve the creative route so we can move to production",
+        "Align the internal team on the strategy before the client presentation",
+        "Win the pitch — this is competitive, three agencies"
+      ],
+      "ambiguities": "Campaign outcomes (increase sales) vs. presentation outcomes (get approval). Extract the presentation outcome.",
+      "validation": "Optional but helps the system choose the right deck type and tone."
+    },
+
+    "deckType": {
+      "type": "string",
+      "enum": ["pitch", "strategy", "campaign", "credentials", "innovation", "workshop", "case-study", "keynote"],
+      "description": "The type of deck needed. May be stated or inferred.",
+      "extractionGuidance": "Listen for 'pitch deck', 'strategy presentation', 'workshop'. If not stated, infer from context: competitive = pitch, alignment = strategy, launch = campaign, internal = workshop.",
+      "validation": "Optional. System should infer if not stated."
+    },
+
+    "rawConfidence": {
+      "type": "object",
+      "description": "Confidence scores for each extraction field.",
+      "properties": {
+        "brief": { "type": "number", "minimum": 0, "maximum": 1 },
+        "audience": { "type": "number", "minimum": 0, "maximum": 1 },
+        "challenge": { "type": "number", "minimum": 0, "maximum": 1 },
+        "insight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "proposition": { "type": "number", "minimum": 0, "maximum": 1 },
+        "tone": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "description": "Per-field confidence (0–1) to help the UI surface low-confidence extractions for user review."
+    }
+  }
+}

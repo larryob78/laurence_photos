@@ -1,0 +1,270 @@
+{
+  "schemas": {
+
+    "Deck": {
+      "description": "A complete presentation — the top-level container for all content.",
+      "required": ["id", "title", "deckType", "scenes", "createdAt"],
+      "optional": ["subtitle", "clientName", "projectName", "brandKitId", "format", "storyShapeId", "creativeRouteId", "updatedAt", "version", "status", "tags", "collaborators"],
+      "fields": {
+        "id": { "type": "string", "description": "Unique identifier", "example": "deck_a1b2c3d4" },
+        "title": { "type": "string", "description": "Deck title", "example": "Brand Relaunch — Pitch Deck" },
+        "subtitle": { "type": "string", "description": "Supporting line", "example": "Prepared for Nike Global Marketing" },
+        "deckType": { "type": "enum", "values": ["pitch", "strategy", "campaign", "credentials", "innovation", "workshop", "case-study", "keynote"], "description": "Structural type determining scene sequencing rules" },
+        "format": { "type": "enum", "values": ["living", "pitch", "workshop"], "description": "Output format — affects density, interactivity, and scene selection" },
+        "scenes": { "type": "Scene[]", "description": "Ordered array of scenes", "relation": "Scene" },
+        "clientName": { "type": "string", "example": "Nike" },
+        "projectName": { "type": "string", "example": "Brand Relaunch 2025" },
+        "brandKitId": { "type": "string", "description": "Reference to applied BrandKit", "relation": "BrandKit" },
+        "storyShapeId": { "type": "string", "relation": "StoryShape" },
+        "creativeRouteId": { "type": "string", "relation": "CreativeRoute" },
+        "createdAt": { "type": "datetime" },
+        "updatedAt": { "type": "datetime" },
+        "version": { "type": "integer", "description": "Incremented on each save" },
+        "status": { "type": "enum", "values": ["draft", "review", "final", "archived"] },
+        "tags": { "type": "string[]", "example": ["Q1-2025", "competitive-pitch"] },
+        "collaborators": { "type": "string[]", "description": "User IDs with access" }
+      }
+    },
+
+    "Scene": {
+      "description": "A single scene in a deck — the atomic unit of presentation content.",
+      "required": ["id", "order", "sceneType", "headline"],
+      "optional": ["subheadline", "bodyText", "visualDirection", "speakerNotes", "layout", "colorAccent", "backgroundColor", "mediaAssetIds", "elements", "duration", "transition"],
+      "fields": {
+        "id": { "type": "string", "example": "scene_x1y2z3" },
+        "order": { "type": "integer", "description": "Position in deck (1-indexed)" },
+        "sceneType": { "type": "enum", "values": ["cover", "intro", "overview", "brief", "challenge", "audience", "market_context", "insight", "strategy", "opportunity", "proposition", "route_reveal", "idea_board", "execution", "media_plan", "timeline", "production", "budget", "case_study", "quote", "results", "provocation", "exercise", "divider", "closing"], "description": "Semantic scene type from taxonomy" },
+        "headline": { "type": "string", "example": "The Uncomfortable Truth" },
+        "subheadline": { "type": "string", "example": "What nobody in the category wants to say" },
+        "bodyText": { "type": "string", "description": "Main body copy — keep concise" },
+        "visualDirection": { "type": "string", "description": "Art direction notes for visual generation or manual design" },
+        "speakerNotes": { "type": "string", "description": "What the presenter should say or do" },
+        "layout": { "type": "enum", "values": ["centred", "split-left", "split-right", "full-bleed", "editorial", "grid", "dashboard"], "description": "Visual layout pattern" },
+        "colorAccent": { "type": "string", "description": "Hex colour accent for this scene", "example": "#6C5CE7" },
+        "backgroundColor": { "type": "string", "description": "Background hex or gradient" },
+        "mediaAssetIds": { "type": "string[]", "description": "References to Asset objects", "relation": "Asset" },
+        "elements": { "type": "object[]", "description": "Rich content elements (text blocks, charts, images, lists)" },
+        "duration": { "type": "integer", "description": "Suggested presentation duration in seconds" },
+        "transition": { "type": "enum", "values": ["fade", "slide", "zoom", "cut", "morph"], "description": "Transition to this scene" }
+      }
+    },
+
+    "BrandKit": {
+      "description": "Normalized brand guidelines for on-brand generation. See brand_kit_schema.json for full spec.",
+      "required": ["id", "brandName", "colorPalette", "typography"],
+      "optional": ["logo", "spacing", "imageStyle", "iconography", "toneOfVoice", "motion", "layoutRules", "dosAndDonts", "version", "createdAt", "updatedAt"],
+      "fields": {
+        "id": { "type": "string", "example": "bk_nike_2025" },
+        "brandName": { "type": "string", "example": "Nike" },
+        "colorPalette": { "type": "object", "description": "Primary, secondary, neutral colours + gradients" },
+        "typography": { "type": "object", "description": "Heading, body, accent font families + scale" },
+        "logo": { "type": "object", "description": "Logo assets + usage rules" },
+        "toneOfVoice": { "type": "object", "description": "Personality, vocabulary, headline/body style" },
+        "imageStyle": { "type": "object", "description": "Photography treatment, subjects, overlays" },
+        "version": { "type": "string", "example": "2025-Q1" },
+        "createdAt": { "type": "datetime" },
+        "updatedAt": { "type": "datetime" }
+      }
+    },
+
+    "Asset": {
+      "description": "Any media file used in a deck — images, videos, icons, logos.",
+      "required": ["id", "type", "fileName", "mimeType", "uploadedAt"],
+      "optional": ["url", "thumbnailUrl", "width", "height", "duration", "fileSize", "altText", "tags", "rights", "source", "generationPrompt", "version", "parentAssetId"],
+      "fields": {
+        "id": { "type": "string", "example": "asset_img_001" },
+        "type": { "type": "enum", "values": ["image", "video", "gif", "icon", "logo", "font", "document"] },
+        "fileName": { "type": "string", "example": "hero-campaign-visual.jpg" },
+        "mimeType": { "type": "string", "example": "image/jpeg" },
+        "url": { "type": "string", "description": "Storage URL" },
+        "thumbnailUrl": { "type": "string" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "duration": { "type": "number", "description": "Duration in seconds (video/gif)" },
+        "fileSize": { "type": "integer", "description": "Bytes" },
+        "altText": { "type": "string" },
+        "tags": { "type": "string[]", "example": ["hero", "campaign", "outdoor"] },
+        "rights": {
+          "type": "object",
+          "fields": {
+            "license": { "type": "string", "description": "e.g., 'Unsplash', 'Client-owned', 'AI-generated'" },
+            "attribution": { "type": "string" },
+            "commercialUse": { "type": "boolean" },
+            "expiresAt": { "type": "datetime" }
+          }
+        },
+        "source": { "type": "enum", "values": ["upload", "unsplash", "pexels", "ai-generated", "brand-kit", "url-import"] },
+        "generationPrompt": { "type": "string", "description": "If AI-generated, the prompt used" },
+        "version": { "type": "integer" },
+        "parentAssetId": { "type": "string", "description": "Previous version of this asset" },
+        "uploadedAt": { "type": "datetime" }
+      }
+    },
+
+    "ThinkingObject": {
+      "description": "The structured extraction from raw voice/text input. The output of the THINK phase.",
+      "required": ["id", "rawInput", "brief", "audience", "challenge", "createdAt"],
+      "optional": ["projectName", "clientName", "problem", "marketContext", "insight", "opportunity", "proposition", "ideaTerritories", "proof", "constraints", "unknowns", "tone", "desiredOutcome", "deckType", "confidence", "sourceType", "updatedAt"],
+      "fields": {
+        "id": { "type": "string", "example": "think_abc123" },
+        "rawInput": { "type": "string", "description": "The original unstructured voice/text input" },
+        "sourceType": { "type": "enum", "values": ["voice", "text", "mixed"] },
+        "projectName": { "type": "string" },
+        "clientName": { "type": "string" },
+        "brief": { "type": "string", "description": "Core brief extracted" },
+        "audience": { "type": "object", "description": "Primary + secondary audience with demographics, psychographics, behaviours" },
+        "challenge": { "type": "string" },
+        "problem": { "type": "string" },
+        "marketContext": { "type": "object", "description": "Category, competitors, trends, category state" },
+        "insight": { "type": "string", "description": "Core human/cultural truth" },
+        "opportunity": { "type": "string" },
+        "proposition": { "type": "string" },
+        "ideaTerritories": { "type": "object[]", "description": "Name, description, tone, risk level" },
+        "proof": { "type": "string[]" },
+        "constraints": { "type": "object", "description": "Budget, timeline, channels, legal, brand, stakeholder" },
+        "unknowns": { "type": "string[]" },
+        "tone": { "type": "object", "description": "Attributes, references, avoid" },
+        "desiredOutcome": { "type": "string" },
+        "deckType": { "type": "enum", "values": ["pitch", "strategy", "campaign", "credentials", "innovation", "workshop", "case-study", "keynote"] },
+        "confidence": { "type": "object", "description": "Per-field confidence scores 0–1" },
+        "createdAt": { "type": "datetime" },
+        "updatedAt": { "type": "datetime" }
+      },
+      "relations": ["StoryShape", "CreativeRoute", "Deck"]
+    },
+
+    "StoryShape": {
+      "description": "A narrative structure template that defines the emotional and logical arc of a deck.",
+      "required": ["id", "name", "arc"],
+      "optional": ["description", "reasoning", "preset", "suggestedSceneCount", "emotionalArc", "deckTypes", "thinkingObjectId", "createdAt"],
+      "fields": {
+        "id": { "type": "string", "example": "shape_challenger" },
+        "name": { "type": "string", "example": "The Challenger Arc" },
+        "description": { "type": "string", "description": "What this shape does and why it works" },
+        "preset": { "type": "enum", "values": ["challenger", "cultural-wave", "evidence-engine", "heros-journey", "problem-solution", "before-after", "tension-release", "three-act", "custom"], "description": "Preset type or custom" },
+        "arc": {
+          "type": "object[]",
+          "description": "Ordered narrative beats",
+          "itemFields": {
+            "label": { "type": "string", "example": "The Uncomfortable Truth" },
+            "description": { "type": "string" },
+            "position": { "type": "number", "description": "0–1 normalized position in arc" },
+            "emotionalIntensity": { "type": "number", "description": "0–1 — for visual arc rendering" },
+            "suggestedSceneTypes": { "type": "string[]", "description": "Scene types that map to this beat" }
+          }
+        },
+        "reasoning": { "type": "string", "description": "Why this shape fits the brief" },
+        "suggestedSceneCount": { "type": "integer", "description": "Recommended total scenes for this shape" },
+        "deckTypes": { "type": "string[]", "description": "Which deck types this shape works best for" },
+        "thinkingObjectId": { "type": "string", "relation": "ThinkingObject" },
+        "createdAt": { "type": "datetime" }
+      },
+      "relations": ["ThinkingObject", "CreativeRoute"]
+    },
+
+    "CreativeRoute": {
+      "description": "A distinct creative direction — concept, visual world, tonal register — built on a story shape.",
+      "required": ["id", "name", "concept", "storyShapeId"],
+      "optional": ["visualWorld", "tonalRegister", "manifesto", "keyLine", "scenes", "risk", "selected", "thinkingObjectId", "createdAt"],
+      "fields": {
+        "id": { "type": "string", "example": "route_burn_the_playbook" },
+        "name": { "type": "string", "example": "Burn The Playbook" },
+        "concept": { "type": "string", "description": "Core creative concept in 2–3 sentences" },
+        "manifesto": { "type": "string", "description": "2–3 sentence creative manifesto" },
+        "keyLine": { "type": "string", "description": "Hero headline or tagline", "example": "The rules have changed. Have you?" },
+        "visualWorld": { "type": "string", "description": "Colours, textures, references, mood" },
+        "tonalRegister": { "type": "string", "description": "Voice and tone description" },
+        "scenes": {
+          "type": "object[]",
+          "description": "Scene outline for this route",
+          "itemFields": {
+            "title": { "type": "string" },
+            "intent": { "type": "string" }
+          }
+        },
+        "risk": { "type": "enum", "values": ["safe", "moderate", "bold"], "description": "Creative bravery level" },
+        "selected": { "type": "boolean", "description": "Whether this route was chosen" },
+        "storyShapeId": { "type": "string", "relation": "StoryShape" },
+        "thinkingObjectId": { "type": "string", "relation": "ThinkingObject" },
+        "createdAt": { "type": "datetime" }
+      },
+      "relations": ["StoryShape", "ThinkingObject", "Deck"]
+    },
+
+    "LivingDeck": {
+      "description": "Extended Deck with living-document capabilities — versioning, collaboration, format switching, edit history.",
+      "required": ["id", "deckId", "format", "editTraces"],
+      "optional": ["activeVersion", "publishedVersion", "forkParentId", "adaptations"],
+      "fields": {
+        "id": { "type": "string" },
+        "deckId": { "type": "string", "relation": "Deck" },
+        "format": { "type": "enum", "values": ["living", "pitch", "workshop"] },
+        "activeVersion": { "type": "integer" },
+        "publishedVersion": { "type": "integer" },
+        "editTraces": { "type": "EditTrace[]", "relation": "EditTrace" },
+        "forkParentId": { "type": "string", "description": "If this deck was forked from another" },
+        "adaptations": {
+          "type": "object[]",
+          "description": "Format-specific overrides",
+          "itemFields": {
+            "format": { "type": "string" },
+            "sceneOverrides": { "type": "object", "description": "Per-scene content overrides for this format" },
+            "scenesExcluded": { "type": "string[]", "description": "Scene IDs hidden in this format" }
+          }
+        }
+      },
+      "relations": ["Deck", "EditTrace"]
+    },
+
+    "EditTrace": {
+      "description": "A record of every edit made to a deck — the foundation for learning and the product moat.",
+      "required": ["id", "deckId", "action", "timestamp"],
+      "optional": ["sceneId", "field", "previousValue", "newValue", "userId", "source", "aiPrompt", "sessionId"],
+      "fields": {
+        "id": { "type": "string" },
+        "deckId": { "type": "string", "relation": "Deck" },
+        "sceneId": { "type": "string", "description": "If edit was to a specific scene", "relation": "Scene" },
+        "action": { "type": "enum", "values": ["create", "edit-field", "reorder", "add-scene", "remove-scene", "change-type", "change-layout", "change-format", "ai-regenerate", "ai-refine", "undo", "redo", "fork", "publish"] },
+        "field": { "type": "string", "description": "Which field was edited (e.g., 'headline', 'bodyText')" },
+        "previousValue": { "type": "any", "description": "Value before the edit" },
+        "newValue": { "type": "any", "description": "Value after the edit" },
+        "userId": { "type": "string" },
+        "source": { "type": "enum", "values": ["manual", "ai-suggestion", "ai-generation", "voice-command", "template"], "description": "How the edit was initiated" },
+        "aiPrompt": { "type": "string", "description": "If AI-assisted, the prompt or instruction used" },
+        "sessionId": { "type": "string", "description": "Groups edits by session" },
+        "timestamp": { "type": "datetime" }
+      },
+      "relations": ["Deck", "Scene"]
+    },
+
+    "OutputRender": {
+      "description": "A rendered export of a deck — PDF, image set, PPTX, or video.",
+      "required": ["id", "deckId", "format", "status", "requestedAt"],
+      "optional": ["url", "fileSize", "pageCount", "resolution", "completedAt", "error", "settings"],
+      "fields": {
+        "id": { "type": "string" },
+        "deckId": { "type": "string", "relation": "Deck" },
+        "format": { "type": "enum", "values": ["pdf", "pptx", "png-set", "jpg-set", "mp4", "json"], "description": "Output format" },
+        "status": { "type": "enum", "values": ["queued", "rendering", "complete", "failed"] },
+        "url": { "type": "string", "description": "Download URL when complete" },
+        "fileSize": { "type": "integer", "description": "Bytes" },
+        "pageCount": { "type": "integer" },
+        "resolution": { "type": "string", "description": "e.g., '1920x1080' or '300dpi'" },
+        "settings": {
+          "type": "object",
+          "description": "Render settings",
+          "fields": {
+            "includeNotes": { "type": "boolean" },
+            "includeVisualDirection": { "type": "boolean" },
+            "aspectRatio": { "type": "string" },
+            "quality": { "type": "enum", "values": ["draft", "presentation", "print"] }
+          }
+        },
+        "requestedAt": { "type": "datetime" },
+        "completedAt": { "type": "datetime" },
+        "error": { "type": "string" }
+      },
+      "relations": ["Deck"]
+    }
+  }
+}

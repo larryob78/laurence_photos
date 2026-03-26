@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Check, Palette, Zap, Sparkles, Plus } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
@@ -25,7 +25,7 @@ export function CreativeRoutesStage() {
   const [format, setFormat] = useState<"pitch" | "workshop">("pitch");
   const [showBrandKitCreator, setShowBrandKitCreator] = useState(false);
   const [customKits, setCustomKits] = useState<BrandKit[]>([]);
-  const allKits = [...BRAND_KITS, ...customKits];
+  const allKits = useMemo(() => [...BRAND_KITS, ...customKits], [customKits]);
 
   const handleGenerate = useCallback(async () => {
     if (!selectedCreativeRouteId || !extraction) return;

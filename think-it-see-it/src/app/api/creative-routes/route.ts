@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SYSTEM_PROMPT, creativeRoutesPrompt } from "@/lib/prompts";
+import { generateJSON, isDemoMode } from "@/lib/ai-server";
 
 export async function POST(req: Request) {
   try {
@@ -8,8 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "extraction and storyShape are required" }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    if (isDemoMode()) {
       return NextResponse.json([
         {
           id: "route-1",
@@ -69,37 +69,14 @@ export async function POST(req: Request) {
       ]);
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT + "\nReturn your response as a JSON object with a 'routes' array." },
-          {
-            role: "user",
-            content: creativeRoutesPrompt(
-              JSON.stringify(extraction),
-              JSON.stringify(storyShape)
-            ),
-          },
-        ],
-        temperature: 0.9,
-      }),
-    });
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
-    return NextResponse.json(result.routes || result);
+    const result = await generateJSON(
+      SYSTEM_PROMPT + "\nReturn your response as a JSON object with a 'routes' array.",
+      creativeRoutesPrompt(JSON.stringify(extraction), JSON.stringify(storyShape)),
+      0.9
+    );
+    return NextResponse.json((result as { routes?: unknown[] }).routes || result);
   } catch (error) {
     console.error("Creative routes error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate creative routes" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate creative routes" }, { status: 500 });
   }
 }

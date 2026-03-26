@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SYSTEM_PROMPT, analyzePrompt } from "@/lib/prompts";
+import { generateJSON, isDemoMode } from "@/lib/ai-server";
 
 export async function POST(req: Request) {
   try {
@@ -8,9 +9,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      // Return rich mock data for demo mode
+    if (isDemoMode()) {
+      // Rich demo data for Toni's ad agency
       return NextResponse.json({
         brief: "Reposition the brand for a younger audience without alienating the loyal existing customer base, launching a new creative platform that works across digital, social, and experiential channels",
         audience: {
@@ -34,28 +34,13 @@ export async function POST(req: Request) {
           categoryState: "Commoditized on product, differentiated on culture. Every brand sounds the same in ads but the ones winning are the ones embedded in real cultural moments.",
         },
         ideaTerritories: [
-          {
-            name: "Earned, Not Given",
-            description: "Position the brand's heritage as something earned through decades of real trust — not manufactured authenticity",
-            tone: "Confident, understated, proof-led",
-            risk: "safe",
-          },
-          {
-            name: "The Uncomfortable Flex",
-            description: "Lean into the brand's 'uncool' reputation and turn it into a badge of honour — anti-trend as the ultimate trend",
-            tone: "Provocative, self-aware, culturally sharp",
-            risk: "bold",
-          },
-          {
-            name: "Culture Carriers",
-            description: "Partner with creators and cultural figures who genuinely use and love the brand — let their stories tell the brand story",
-            tone: "Warm, human, documentary-feel",
-            risk: "moderate",
-          },
+          { name: "Earned, Not Given", description: "Position the brand's heritage as something earned through decades of real trust", tone: "Confident, understated, proof-led", risk: "safe" },
+          { name: "The Uncomfortable Flex", description: "Lean into the brand's 'uncool' reputation and turn it into a badge of honour", tone: "Provocative, self-aware, culturally sharp", risk: "bold" },
+          { name: "Culture Carriers", description: "Partner with creators who genuinely use and love the brand", tone: "Warm, human, documentary-feel", risk: "moderate" },
         ],
         proof: [
           "Brand trust scores are 40% higher than nearest competitor",
-          "Heritage brands with authentic cultural strategies see 2.3x engagement vs. those that chase trends (Kantar 2024)",
+          "Heritage brands with authentic cultural strategies see 2.3x engagement (Kantar 2024)",
           "73% of Gen Z say they'd reconsider a brand their parents love if it showed up in culture authentically",
         ],
         tone: {
@@ -78,14 +63,7 @@ export async function POST(req: Request) {
         ],
         desiredOutcome: "Get the CMO and marketing leadership aligned on a creative platform direction, with approval to develop one route into full campaign",
         deckType: "pitch",
-        confidence: {
-          brief: 0.9,
-          audience: 0.85,
-          challenge: 0.9,
-          insight: 0.75,
-          proposition: 0.6,
-          tone: 0.8,
-        },
+        confidence: { brief: 0.9, audience: 0.85, challenge: 0.9, insight: 0.75, proposition: 0.6, tone: 0.8 },
         rawSummary: text.slice(0, 200) + (text.length > 200 ? "..." : ""),
         objective: "Reposition the brand for a younger audience with a new creative platform that bridges heritage and cultural relevance",
         keyInsights: [
@@ -102,36 +80,15 @@ export async function POST(req: Request) {
         opportunities: [
           "First established brand to authentically bridge the generational relevance gap",
           "Leverage existing trust as a foundation for cultural participation",
-          "Build a creator-partnership model that turns the brand into a platform, not just an advertiser",
+          "Build a creator-partnership model that turns the brand into a platform",
         ],
       });
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: analyzePrompt(text) },
-        ],
-        temperature: 0.7,
-      }),
-    });
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const result = await generateJSON(SYSTEM_PROMPT, analyzePrompt(text), 0.7);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Analyze error:", error);
-    return NextResponse.json(
-      { error: "Failed to analyze input" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to analyze input" }, { status: 500 });
   }
 }

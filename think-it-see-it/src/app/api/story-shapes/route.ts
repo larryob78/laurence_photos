@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SYSTEM_PROMPT, storyShapesPrompt } from "@/lib/prompts";
+import { generateJSON, isDemoMode } from "@/lib/ai-server";
 
 export async function POST(req: Request) {
   try {
@@ -8,8 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "extraction is required" }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    if (isDemoMode()) {
       return NextResponse.json([
         {
           id: "shape-1",
@@ -35,31 +35,14 @@ export async function POST(req: Request) {
       ]);
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT + "\nReturn your response as a JSON object with a 'shapes' array." },
-          { role: "user", content: storyShapesPrompt(JSON.stringify(extraction)) },
-        ],
-        temperature: 0.8,
-      }),
-    });
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
-    return NextResponse.json(result.shapes || result);
+    const result = await generateJSON(
+      SYSTEM_PROMPT + "\nReturn your response as a JSON object with a 'shapes' array.",
+      storyShapesPrompt(JSON.stringify(extraction)),
+      0.8
+    );
+    return NextResponse.json((result as { shapes?: unknown[] }).shapes || result);
   } catch (error) {
     console.error("Story shapes error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate story shapes" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate story shapes" }, { status: 500 });
   }
 }

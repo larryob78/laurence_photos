@@ -31,3 +31,19 @@
 ## ADR-008: Monorepo Single App Architecture
 **Decision:** Keep everything in a single Next.js app rather than microservices.
 **Rationale:** Speed of development. The product is pre-PMF and needs rapid iteration. Server actions replace API routes for most operations. Can decompose later if scale demands it.
+
+## ADR-009: Eight Specialized AI Agents
+**Decision:** Decompose platform intelligence into 8 specialized agent modules: Scout (brand audit), Card Builder (JSON-LD), Dealer (A2A negotiation), Seeder (preference campaigns), Media Agent (platform planning), Trust Agent (claims verification + attestation), CD Brain (creative scoring), and Conductor (orchestration + ARB score).
+**Rationale:** Each agent has a distinct responsibility and can be tested, evolved, and scaled independently. The Conductor orchestrates cross-agent workflows. All agents share a common Claude API helper for consistent LLM interaction.
+
+## ADR-010: HMAC-SHA256 for Attestation Signatures
+**Decision:** Use Node.js crypto HMAC-SHA256 for brand data card hashing and attestation signatures.
+**Rationale:** Provides tamper-evident signatures without requiring PKI infrastructure. The ATTESTATION_SECRET env var controls the signing key. W3C Verifiable Credential format ensures interoperability with decentralized identity standards.
+
+## ADR-011: Cannes Rubric for Creative Quality Gate
+**Decision:** CD Brain uses a Cannes Lions-inspired rubric (Insight + Craft + Impact, 0-10 each) with a 24/30 approval threshold.
+**Rationale:** Provides an objective, industry-recognized framework for content quality. The threshold ensures only shortlist-quality content passes. Below-threshold content receives specific, actionable fixes rather than vague feedback.
+
+## ADR-012: ARB Score Composite Metric
+**Decision:** The Agent Readiness Benchmark (ARB) score uses weighted layers: Semantic (25%), Action (30%), Trust (25%), Governance (20%).
+**Rationale:** Captures the full spectrum of brand readiness for AI commerce. Action layer gets the highest weight because conversion capability is the most direct revenue driver. Each layer maps to specific agent modules enabling targeted gap remediation.

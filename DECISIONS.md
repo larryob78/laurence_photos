@@ -47,3 +47,15 @@
 ## ADR-012: ARB Score Composite Metric
 **Decision:** The Agent Readiness Benchmark (ARB) score uses weighted layers: Semantic (25%), Action (30%), Trust (25%), Governance (20%).
 **Rationale:** Captures the full spectrum of brand readiness for AI commerce. Action layer gets the highest weight because conversion capability is the most direct revenue driver. Each layer maps to specific agent modules enabling targeted gap remediation.
+
+## ADR-013: Next.js 15 App Router API Routes
+**Decision:** All API endpoints implemented as Next.js 15 App Router route handlers (route.ts files) under src/app/api/brands/.
+**Rationale:** Co-locates API logic with the frontend. App Router route handlers support async params (Promise<{ id: string }>), which aligns with Next.js 15's async API design. Each route file exports named HTTP method handlers (GET, POST, PUT, DELETE).
+
+## ADR-014: Brand Autocomplete via Single Claude Call
+**Decision:** The /api/brands/autocomplete endpoint generates all brand data (description, personality, competitors, audit queries, offer rules, trust claims, governance policies, and JSON-LD data card) in a single Claude API call with max_tokens 8192.
+**Rationale:** One API call instead of eight reduces latency and cost. The structured prompt with explicit JSON schema ensures consistent output. This is the killer onboarding feature - enter a brand name and category, get everything.
+
+## ADR-015: Battlefield Batch Negotiation Pattern
+**Decision:** The /api/brands/[id]/battlefield endpoint runs negotiations sequentially with 200ms delays between each.
+**Rationale:** Sequential execution with small delays prevents rate limiting on the Claude API while still allowing batch operations. Results are collected and returned as a single array for battlefield visualization.

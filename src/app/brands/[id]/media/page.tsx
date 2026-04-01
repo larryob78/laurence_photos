@@ -437,8 +437,8 @@ export default function MediaPage() {
                           fontSize: 11,
                           color: "#c8c8e0",
                         }}
-                        formatter={(value: number) => [
-                          `$${value.toLocaleString()}`,
+                        formatter={(value) => [
+                          `$${Number(value).toLocaleString()}`,
                         ]}
                       />
                     </PieChart>

@@ -498,7 +498,7 @@ export default function DealerPage() {
                       fontSize: 11,
                       color: "#c8c8e0",
                     }}
-                    formatter={(value: number) => [`${value}%`, "Rate"]}
+                    formatter={(value) => [`${Number(value)}%`, "Rate"]}
                   />
                   <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
                     {acceptanceByAgent.map((entry, i) => (

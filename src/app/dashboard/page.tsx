@@ -23,16 +23,8 @@ interface Brand {
   trustScore: number | null;
   competitors: string[];
   createdAt: string;
-}
-
-function generateSparklineData(): number[] {
-  const points: number[] = [];
-  let value = 40 + Math.random() * 30;
-  for (let i = 0; i < 14; i++) {
-    value = Math.max(5, Math.min(95, value + (Math.random() - 0.45) * 12));
-    points.push(Math.round(value));
-  }
-  return points;
+  sparklineData: number[];
+  negotiationCount: number;
 }
 
 export default function DashboardPage() {
@@ -222,7 +214,7 @@ export default function DashboardPage() {
           {brands.map((brand) => {
             const arbScore = brand.latestArbScore ?? 0;
             const trustScoreVal = brand.trustScore ?? 0;
-            const sparkData = generateSparklineData();
+            const sparkData = brand.sparklineData?.length > 0 ? brand.sparklineData : [0];
             const isAuditing = auditingBrand === brand.id;
 
             return (
@@ -295,7 +287,7 @@ export default function DashboardPage() {
                     <span className="text-[10px] text-dim uppercase tracking-wider block">
                       Negotiations
                     </span>
-                    <span className="text-sm text-infra">0</span>
+                    <span className="text-sm text-infra">{brand.negotiationCount}</span>
                   </div>
                 </div>
 

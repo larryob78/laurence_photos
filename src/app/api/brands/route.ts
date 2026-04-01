@@ -25,12 +25,28 @@ export async function GET() {
           .orderBy(desc(schema.attestations.createdAt))
           .limit(1);
 
+        // Get last 14 days of ASoV for sparkline
+        const asovHistory = await db
+          .select({ asovScore: schema.asovDaily.asovScore })
+          .from(schema.asovDaily)
+          .where(sql`${schema.asovDaily.brandId} = ${brand.id}`)
+          .orderBy(desc(schema.asovDaily.date))
+          .limit(14);
+
+        // Get negotiation count
+        const negCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.negotiations)
+          .where(sql`${schema.negotiations.brandId} = ${brand.id}`);
+
         return {
           ...brand,
           competitors: brand.competitors ? JSON.parse(brand.competitors) : [],
           latestArbScore: latestAsov[0]?.arbScore ?? null,
           latestAsovScore: latestAsov[0]?.asovScore ?? null,
           trustScore: latestAttestation[0]?.trustScore ?? null,
+          sparklineData: asovHistory.reverse().map(d => d.asovScore ?? 0),
+          negotiationCount: negCount[0]?.count ?? 0,
         };
       })
     );

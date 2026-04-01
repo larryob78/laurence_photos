@@ -23,13 +23,13 @@ export async function GET(
     }
 
     // Fetch all related data in parallel
-    const [queries, rules, allClaims, policies, attestations, asovData, cards] = await Promise.all([
+    const [queries, rules, allClaims, policies, attestations, allAsovData, cards] = await Promise.all([
       db.select().from(schema.auditQueries).where(eq(schema.auditQueries.brandId, brandId)),
       db.select().from(schema.offerRules).where(eq(schema.offerRules.brandId, brandId)),
       db.select().from(schema.claims).where(eq(schema.claims.brandId, brandId)),
       db.select().from(schema.brandPolicies).where(eq(schema.brandPolicies.brandId, brandId)),
       db.select().from(schema.attestations).where(eq(schema.attestations.brandId, brandId)).orderBy(desc(schema.attestations.createdAt)).limit(1),
-      db.select().from(schema.asovDaily).where(eq(schema.asovDaily.brandId, brandId)).orderBy(desc(schema.asovDaily.date)).limit(1),
+      db.select().from(schema.asovDaily).where(eq(schema.asovDaily.brandId, brandId)).orderBy(desc(schema.asovDaily.date)),
       db.select().from(schema.brandDataCards).where(eq(schema.brandDataCards.brandId, brandId)),
     ]);
 
@@ -43,7 +43,8 @@ export async function GET(
       claims: allClaims,
       policies,
       latestAttestation: attestations[0] || null,
-      latestAsov: asovData[0] || null,
+      latestAsov: allAsovData[0] || null,
+      asovDaily: allAsovData.reverse(),
       dataCard: activeCard ? { ...activeCard, cardJson: JSON.parse(activeCard.cardJson) } : null,
     });
   } catch (error) {

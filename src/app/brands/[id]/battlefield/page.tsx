@@ -668,7 +668,7 @@ export default function BattlefieldPage() {
                 textAnchor="middle"
                 fontSize="18"
               >
-                {brand?.category === "Coffee" ? "\u2615" : brand?.category === "Tech" ? "\ud83d\udcbb" : "\ud83c\udfe2"}
+                {brand?.category?.includes("Ferry") || brand?.category?.includes("Transport") ? "⛴️" : brand?.category?.includes("Grocery") || brand?.category?.includes("Retail") ? "🛒" : brand?.category?.includes("Tourism") || brand?.category?.includes("Travel") ? "🌍" : brand?.category?.includes("Tech") || brand?.category?.includes("SaaS") ? "💻" : brand?.category?.includes("Finance") ? "💰" : brand?.category?.includes("Health") ? "🏥" : "🏢"}
               </text>
               <text
                 x={brandX}

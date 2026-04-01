@@ -4,11 +4,6 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   PlusCircle,
-  Search,
-  Shield,
-  Handshake,
-  BarChart3,
-  FileCheck,
   Zap,
 } from "lucide-react";
 
@@ -21,12 +16,7 @@ export const metadata: Metadata = {
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/brands/new", label: "Create Brand", icon: PlusCircle },
-  { href: "/brands", label: "All Brands", icon: Zap },
-  { href: "/audit", label: "Visibility Audit", icon: Search },
-  { href: "/trust", label: "Trust Layer", icon: Shield },
-  { href: "/negotiate", label: "Negotiations", icon: Handshake },
-  { href: "/analytics", label: "ASOv Analytics", icon: BarChart3 },
-  { href: "/policies", label: "Brand Policies", icon: FileCheck },
+  { href: "/dashboard", label: "All Brands", icon: Zap },
 ];
 
 export default function RootLayout({

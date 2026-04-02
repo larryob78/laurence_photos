@@ -13,6 +13,7 @@ import {
   Megaphone,
   Sprout,
   Loader2,
+  Activity,
 } from "lucide-react";
 
 interface BrandBasic {
@@ -30,6 +31,7 @@ const tabs = [
   { slug: "/governance", label: "Governance", icon: Scale },
   { slug: "/media", label: "Media", icon: Megaphone },
   { slug: "/seeder", label: "Seeder", icon: Sprout },
+  { slug: "/monitor", label: "Swarm Monitor", icon: Activity },
 ];
 
 export default function BrandDetailLayout({

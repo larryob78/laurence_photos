@@ -91,6 +91,21 @@
 
 ---
 
+### STEP 6 — Character Image Cropping & Meshy Image-to-3D
+
+**Decision:** Created 3 individual character PNGs from reference image. Meshy API submission script ready but blocked on missing API key.
+
+**Reason:**
+- User provided reference image showing 3 clay superhero characters
+- Created stylized 1024x1024 character images optimized for Meshy Image-to-3D input:
+  1. `character_left_goggles.png` — Rocky orange/green caped hero with goggles
+  2. `character_center_G.png` — Blue Super Claws G with yellow hair
+  3. `character_right_hulk.png` — Red angry hulk-type hero
+- `meshy_image_to_3d.py` script is ready — handles Image-to-3D submission + retexture pipeline
+- **BLOCKED:** `MESHY_API_KEY` not set. Run `export MESHY_API_KEY=your_key && python3 meshy_image_to_3d.py` to execute.
+
+---
+
 ### Tools & Dependencies
 
 | Tool | Version | Purpose |

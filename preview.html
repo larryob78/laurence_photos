@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAPKIN A2A — UI Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@800&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #05050a; --surface: #0a0a12; --border: #181828;
+    --text: #c8c8e0; --bright: #eeeeff; --dim: #444460;
+    --accent: #00ff88; --alert: #ff3366; --data: #4488ff;
+    --warning: #ffcc00; --infra: #aa66ff; --trust: #ff8800;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  h1, h2, h3 { font-family: 'Syne', sans-serif; font-weight: 800; color: var(--bright); }
+  .page { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  .page-label { background: var(--accent); color: var(--bg); font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; padding: 8px 16px; margin: 40px 0 20px; display: inline-block; letter-spacing: 0.1em; }
+  .screen { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 30px; background: var(--bg); }
+  .screen-inner { padding: 32px; }
+
+  /* Sidebar */
+  .app-layout { display: flex; min-height: 600px; }
+  .sidebar { width: 200px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; flex-shrink: 0; }
+  .sidebar-logo { padding: 0 16px 16px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .sidebar-logo .brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; }
+  .sidebar-logo .brand span:first-child { color: var(--accent); }
+  .sidebar-logo .brand span:last-child { color: var(--bright); }
+  .sidebar-logo .sub { font-size: 8px; color: var(--dim); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 4px; }
+  .sidebar-nav { padding: 8px; }
+  .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 8px 12px; color: var(--text); text-decoration: none; font-size: 12px; border-radius: 6px; opacity: 0.7; }
+  .sidebar-nav a.active { opacity: 1; color: var(--accent); background: rgba(0,255,136,0.05); }
+  .sidebar-nav a:hover { opacity: 1; color: var(--accent); }
+  .sidebar-status { padding: 16px; border-top: 1px solid var(--border); margin-top: auto; position: absolute; bottom: 0; }
+  .main { flex: 1; padding: 32px; overflow: hidden; }
+
+  /* Landing */
+  .hero { text-align: center; padding: 60px 20px; position: relative; }
+  .hero-bar { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border: 1px solid var(--border); border-radius: 6px; background: rgba(10,10,18,0.5); margin-bottom: 32px; }
+  .hero-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  .hero-bar span { font-size: 10px; color: var(--dim); letter-spacing: 0.2em; text-transform: uppercase; }
+  .hero h1 { font-size: 48px; line-height: 1.1; max-width: 700px; margin: 0 auto; }
+  .hero h1 .green { color: var(--accent); }
+  .hero .sub { color: var(--dim); font-size: 16px; margin-top: 16px; max-width: 500px; margin-left: auto; margin-right: auto; }
+  .hero .sub .bright { color: var(--bright); }
+  .cta { display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; background: var(--accent); color: var(--bg); font-weight: 700; font-size: 14px; border-radius: 6px; text-decoration: none; margin-top: 28px; border: none; cursor: pointer; }
+  .stats-row { display: flex; gap: 16px; justify-content: center; margin-top: 40px; }
+  .stat-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px 24px; text-align: center; background: rgba(10,10,18,0.3); min-width: 180px; }
+  .stat-card .val { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px; }
+  .stat-card .val.green { color: var(--accent); }
+  .stat-card .val.blue { color: var(--data); }
+  .stat-card .val.orange { color: var(--trust); }
+  .stat-card .lbl { font-size: 10px; color: var(--dim); margin-top: 6px; }
+
+  /* Gap Map */
+  .gap-map { margin-top: 40px; }
+  .gap-layer { border: 1px solid; border-radius: 10px; padding: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .gap-layer.l1 { border-color: rgba(68,136,255,0.3); background: rgba(68,136,255,0.05); }
+  .gap-layer.l2 { border-color: rgba(255,204,0,0.3); background: rgba(255,204,0,0.05); }
+  .gap-layer.l3 { border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.05); }
+  .gap-layer .info .layer-num { font-size: 9px; color: var(--dim); letter-spacing: 0.15em; }
+  .gap-layer .info h3 { font-size: 18px; margin: 2px 0; }
+  .gap-layer.l1 h3 { color: var(--data); }
+  .gap-layer.l2 h3 { color: var(--warning); }
+  .gap-layer.l3 h3 { color: var(--accent); }
+  .gap-layer .info .desc { font-size: 11px; color: var(--dim); }
+  .gap-layer .density { text-align: right; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; }
+  .gap-layer.l1 .density { color: var(--alert); }
+  .gap-layer.l2 .density { color: var(--warning); }
+  .gap-layer.l3 .density { color: var(--accent); }
+  .bars { display: flex; gap: 2px; margin-top: 6px; justify-content: flex-end; }
+  .bars .bar { width: 5px; height: 14px; border-radius: 2px; background: var(--border); }
+  .bars .bar.filled.blue { background: rgba(68,136,255,0.5); }
+  .bars .bar.filled.yellow { background: rgba(255,204,0,0.5); }
+
+  /* Dashboard */
+  .dash-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .dash-header .status { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; }
+  .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .dash-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .dash-stat .label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 6px; }
+  .dash-stat .value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; }
+  .dash-stat .value.green { color: var(--accent); }
+  .dash-stat .value.blue { color: var(--data); }
+  .dash-stat .value.orange { color: var(--trust); }
+  .dash-stat .value.yellow { color: var(--warning); }
+  .brand-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .brand-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .brand-card:hover { border-color: rgba(0,255,136,0.2); }
+  .brand-card .card-head { display: flex; justify-content: space-between; margin-bottom: 14px; }
+  .brand-card .card-head h3 { font-size: 16px; }
+  .brand-card .card-head .cat { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.15em; }
+  .brand-card .card-head .id { font-size: 9px; color: var(--dim); background: var(--bg); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); }
+  .scores-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .gauge { position: relative; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge .gauge-label { position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; }
+  .gauge .gauge-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; color: var(--bright); }
+  .sparkline-box { flex: 1; text-align: right; }
+  .sparkline-box .label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .sparkline { height: 28px; display: flex; align-items: flex-end; gap: 2px; justify-content: flex-end; }
+  .sparkline .bar { width: 6px; background: var(--data); border-radius: 1px; opacity: 0.7; }
+  .meta-row { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .meta-row .meta { flex: 1; }
+  .meta-row .meta .label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; }
+  .meta-row .meta .val { font-size: 13px; margin-top: 2px; }
+  .meta-row .meta .val.blue { color: var(--data); }
+  .meta-row .meta .val.purple { color: var(--infra); }
+  .actions-row { display: flex; gap: 8px; }
+  .btn-outline { flex: 1; padding: 8px; text-align: center; font-size: 11px; border: 1px solid; border-radius: 6px; cursor: pointer; background: transparent; font-family: 'JetBrains Mono', monospace; }
+  .btn-outline.green { border-color: rgba(0,255,136,0.3); color: var(--accent); }
+  .btn-outline.blue { border-color: rgba(68,136,255,0.3); color: var(--data); }
+  .add-card { background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; color: var(--dim); font-size: 13px; cursor: pointer; }
+  .add-card:hover { border-color: rgba(0,255,136,0.4); color: var(--accent); }
+  .add-card .plus { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 10px; }
+
+  /* Swarm Monitor */
+  .swarm-layout { display: flex; height: 500px; }
+  .swarm-canvas { flex: 1; background: var(--bg); position: relative; overflow: hidden; }
+  .swarm-feed { width: 280px; background: var(--surface); border-left: 1px solid var(--border); }
+  .swarm-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .swarm-header h2 { font-size: 16px; }
+  .swarm-header .phase { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.2em; }
+  .swarm-controls { display: flex; align-items: center; gap: 8px; }
+  .speed-btns { display: flex; gap: 2px; border: 1px solid var(--border); border-radius: 4px; padding: 2px; }
+  .speed-btns button { padding: 3px 8px; font-size: 9px; background: transparent; border: none; color: var(--dim); cursor: pointer; border-radius: 3px; font-family: 'JetBrains Mono', monospace; }
+  .speed-btns button.active { background: var(--accent); color: var(--bg); font-weight: 700; }
+  .start-btn { padding: 6px 16px; background: var(--accent); color: var(--bg); border: none; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
+  .agent-node { position: absolute; text-align: center; }
+  .agent-circle { width: 64px; height: 64px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid var(--dim); transition: all 0.3s; }
+  .agent-circle.active { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,255,136,0.4); }
+  .agent-circle.complete { border-color: var(--data); }
+  .agent-name { font-size: 8px; font-weight: 700; margin-top: 4px; letter-spacing: 0.1em; }
+  .agent-status { font-size: 7px; margin-top: 2px; }
+  .agent-status.active { color: var(--accent); }
+  .agent-status.complete { color: var(--data); }
+  .agent-status.idle { color: var(--dim); }
+  .feed-header { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+  .feed-header h3 { font-size: 12px; }
+  .feed-header span { font-size: 9px; color: var(--dim); }
+  .chips { padding: 8px; display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); }
+  .chip { font-size: 8px; padding: 2px 6px; border-radius: 4px; border: 1px solid; display: flex; align-items: center; gap: 3px; }
+  .chip .dot { width: 4px; height: 4px; border-radius: 50%; }
+  .feed-list { overflow-y: auto; height: 300px; }
+  .feed-item { padding: 8px 14px; border-bottom: 1px solid rgba(24,24,40,0.5); }
+  .feed-item .time { font-size: 8px; color: var(--dim); }
+  .feed-item .status-tag { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-left: 8px; }
+  .feed-item .status-tag.success { color: var(--accent); }
+  .feed-item .status-tag.info { color: var(--data); }
+  .feed-item .action { font-size: 9px; font-weight: 700; color: var(--bright); margin-top: 2px; }
+  .feed-item .detail { font-size: 9px; color: var(--dim); margin-top: 1px; }
+  .beam-line { position: absolute; height: 2px; background: var(--accent); box-shadow: 0 0 8px rgba(0,255,136,0.5); transform-origin: left center; animation: beamPulse 0.8s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes beamPulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.3; } }
+
+  /* Section divider */
+  .divider { height: 1px; background: var(--border); margin: 60px 0; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<!-- ==================== LANDING PAGE ==================== -->
+<div class="page-label">📄 LANDING PAGE — localhost:3000</div>
+<div class="screen">
+  <div class="screen-inner">
+    <div class="hero">
+      <div class="hero-bar">
+        <div class="dot"></div>
+        <span>napkin.ie // agent-to-agent advertising protocol</span>
+      </div>
+      <h1>The World's First <span class="green">Agent-to-Agent</span><br>Ad Agency</h1>
+      <p class="sub">We don't make ads humans see. <span class="bright">We make brands agents choose.</span></p>
+      <button class="cta">Create Your First Brand Agent →</button>
+      <div class="stats-row">
+        <div class="stat-card"><div class="val green">$100M</div><div class="lbl">OpenAI ad revenue in 6 weeks</div></div>
+        <div class="stat-card"><div class="val blue">$3-5T</div><div class="lbl">Agentic commerce by 2030 (McKinsey)</div></div>
+        <div class="stat-card"><div class="val orange">0</div><div class="lbl">Agencies doing agent-to-agent</div></div>
+      </div>
+      <div class="gap-map" style="max-width:700px;margin:40px auto 0;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:9px;color:var(--dim);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:6px;">Market Gap Analysis</div>
+          <h2 style="font-size:28px;">The 3-Layer Gap Map</h2>
+        </div>
+        <div class="gap-layer l1">
+          <div class="info"><div class="layer-num">LAYER 1</div><h3>GET CITED</h3><div class="desc">Mentioned in AI responses • 50+ GEO agencies</div></div>
+          <div><div class="density">CROWDED</div><div class="bars">${Array(15).fill('<div class="bar filled blue"></div>').join('')}${Array(5).fill('<div class="bar"></div>').join('')}</div></div>
+        </div>
+        <div class="gap-layer l2">
+          <div class="info"><div class="layer-num">LAYER 2</div><h3>GET CHOSEN</h3><div class="desc">Selected when agent compares options • ~0 agencies</div></div>
+          <div><div class="density">EMPTY</div><div class="bars">${Array(1).fill('<div class="bar filled yellow"></div>').join('')}${Array(19).fill('<div class="bar"></div>').join('')}</div></div>
+        </div>
+        <div class="gap-layer l3">
+          <div class="info"><div class="layer-num">LAYER 3</div><h3>GET PREFERRED</h3><div class="desc">Default recommendation in agent commerce • 0 agencies</div></div>
+          <div><div class="density">WE ARE HERE</div><div class="bars">${Array(20).fill('<div class="bar"></div>').join('')}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="page-label">📊 DASHBOARD — localhost:3000/dashboard</div>
+<div class="screen">
+  <div class="app-layout">
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <div class="brand"><span>NAPKIN</span> <span>A2A</span></div>
+        <div class="sub">Agent-to-Agent Ad Agency</div>
+      </div>
+      <div class="sidebar-nav">
+        <a href="#" class="active">📊 Dashboard</a>
+        <a href="#">➕ Create Brand</a>
+        <a href="#">⚡ All Brands</a>
+      </div>
+    </div>
+    <div class="main">
+      <div class="dash-header">
+        <div>
+          <h1 style="font-size:24px;">Command Center</h1>
+          <div style="font-size:10px;color:var(--dim);margin-top:4px;">2026-04-03 12:00:00 UTC</div>
+        </div>
+        <div class="status"><div class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;"></div> All Systems Online</div>
+      </div>
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="label">Active Brands</div><div class="value green">3</div></div>
+        <div class="dash-stat"><div class="label">Avg ARB Score</div><div class="value blue">47</div></div>
+        <div class="dash-stat"><div class="label">Avg Trust Score</div><div class="value orange">70</div></div>
+        <div class="dash-stat"><div class="label">Competitors Tracked</div><div class="value yellow">12</div></div>
+      </div>
+      <div class="brand-grid">
+        <!-- Stena Line -->
+        <div class="brand-card">
+          <div class="card-head"><div><h3>Stena Line</h3><div class="cat">Ferry Transport</div></div><div class="id">ID:1</div></div>
+          <div class="scores-row">
+            <div class="gauge">
+              <svg width="64" height="64"><circle cx="32" cy="32" r="28" fill="none" stroke="var(--border)" stroke-width="4"/><circle cx="32" cy="32" r="28" fill="none" stroke="var(--warning)" stroke-width="4" stroke-dasharray="${0.45*176} 176" stroke-linecap="round"/></svg>
+              <div class="gauge-value">45</div><div class="gauge-label">ARB</div>
+            </div>
+            <div class="gauge">
+              <svg width="48" height="48"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--border)" stroke-width="3"/><circle cx="24" cy="24" r="20" fill="none" stroke="var(--trust)" stroke-width="3" stroke-dasharray="${0.68*126} 126" stroke-linecap="round"/></svg>
+              <div class="gauge-value" style="font-size:11px;">68</div><div class="gauge-label">Trust</div>
+            </div>
+            <div class="sparkline-box"><div class="label">ASoV Trend (14d)</div><div class="sparkline"><div class="bar" style="height:12px"></div><div class="bar" style="height:14px"></div><div class="bar" style="height:13px"></div><div class="bar" style="height:16px"></div><div class="bar" style="height:15px"></div><div class="bar" style="height:18px"></div><div class="bar" style="height:17px"></div><div class="bar" style="height:20px"></div><div class="bar" style="height:19px"></div><div class="bar" style="height:22px"></div><div class="bar" style="height:21px"></div><div class="bar" style="height:24px"></div><div class="bar" style="height:23px"></div><div class="bar" style="height:26px"></div></div></div>
+          </div>
+          <div class="meta-row"><div class="meta"><div class="label">Competitors</div><div class="val">4</div></div><div class="meta"><div class="label">ASoV</div><div class="val blue">57%</div></div><div class="meta"><div class="label">Negotiations</div><div class="val purple">8</div></div></div>
+          <div class="actions-row"><button class="btn-outline green">⚡ Run Audit</button><button class="btn-outline blue">👁 View Battlefield</button></div>
+        </div>
+        <!-- Tesco -->
+        <div class="brand-card">
+          <div class="card-head"><div><h3>Tesco Ireland</h3><div class="cat">Grocery Retail</div></div><div class="id">ID:2</div></div>
+          <div class="scores-row">
+            <div class="gauge">
+              <svg width="64" height="64"><circle cx="32" cy="32" r="28" fill="none" stroke="var(--border)" stroke-width="4"/><circle cx="32" cy="32" r="28" fill="none" stroke="var(--warning)" stroke-width="4" stroke-dasharray="${0.55*176} 176" stroke-linecap="round"/></svg>
+              <div class="gauge-value">55</div><div class="gauge-label">ARB</div>
+            </div>
+            <div class="gauge">
+              <svg width="48" height="48"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--border)" stroke-width="3"/><circle cx="24" cy="24" r="20" fill="none" stroke="var(--trust)" stroke-width="3" stroke-dasharray="${0.68*126} 126" stroke-linecap="round"/></svg>
+              <div class="gauge-value" style="font-size:11px;">68</div><div class="gauge-label">Trust</div>
+            </div>
+            <div class="sparkline-box"><div class="label">ASoV Trend (14d)</div><div class="sparkline"><div class="bar" style="height:16px"></div><div class="bar" style="height:17px"></div><div class="bar" style="height:18px"></div><div class="bar" style="height:19px"></div><div class="bar" style="height:20px"></div><div class="bar" style="height:21px"></div><div class="bar" style="height:20px"></div><div class="bar" style="height:22px"></div><div class="bar" style="height:24px"></div><div class="bar" style="height:23px"></div><div class="bar" style="height:25px"></div><div class="bar" style="height:26px"></div><div class="bar" style="height:27px"></div><div class="bar" style="height:28px"></div></div></div>
+          </div>
+          <div class="meta-row"><div class="meta"><div class="label">Competitors</div><div class="val">4</div></div><div class="meta"><div class="label">ASoV</div><div class="val blue">65%</div></div><div class="meta"><div class="label">Negotiations</div><div class="val purple">8</div></div></div>
+          <div class="actions-row"><button class="btn-outline green">⚡ Run Audit</button><button class="btn-outline blue">👁 View Battlefield</button></div>
+        </div>
+        <!-- Add card -->
+        <div class="add-card"><div class="plus">+</div>Deploy New Brand Agent</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SWARM MONITOR ==================== -->
+<div class="page-label">🎯 SWARM MONITOR — localhost:3000/brands/1/monitor</div>
+<div class="screen">
+  <div class="swarm-header">
+    <div>
+      <h2 style="font-size:16px;">Agent Swarm Monitor</h2>
+      <div class="phase">Stena Line // SCOUT → BRAND AUDIT</div>
+    </div>
+    <div class="swarm-controls">
+      <div class="speed-btns"><button>0.5x</button><button class="active">1x</button><button>2x</button><button>4x</button></div>
+      <button class="start-btn">▶ START SWARM</button>
+    </div>
+  </div>
+  <div class="swarm-layout">
+    <div class="swarm-canvas">
+      <!-- SVG grid background -->
+      <svg width="100%" height="100%" style="position:absolute;top:0;left:0;">
+        <defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#181828" stroke-width="0.5"/></pattern></defs>
+        <rect width="100%" height="100%" fill="url(#g)"/>
+      </svg>
+      <!-- Agents positioned in circle -->
+      <div class="agent-node" style="left:calc(50% - 32px);top:30px;"><div class="agent-circle active">🔍</div><div class="agent-name" style="color:var(--accent);">SCOUT</div><div class="agent-status active">ACTIVE</div></div>
+      <div class="agent-node" style="left:calc(75% - 32px);top:80px;"><div class="agent-circle">🪪</div><div class="agent-name" style="color:var(--dim);">CARD BUILDER</div><div class="agent-status idle">IDLE</div></div>
+      <div class="agent-node" style="left:calc(85% - 32px);top:200px;"><div class="agent-circle">🤝</div><div class="agent-name" style="color:var(--dim);">DEALER</div><div class="agent-status idle">IDLE</div></div>
+      <div class="agent-node" style="left:calc(75% - 32px);top:330px;"><div class="agent-circle">🌱</div><div class="agent-name" style="color:var(--dim);">SEEDER</div><div class="agent-status idle">IDLE</div></div>
+      <div class="agent-node" style="left:calc(50% - 32px);top:380px;"><div class="agent-circle complete">📡</div><div class="agent-name" style="color:var(--data);">MEDIA</div><div class="agent-status complete">DONE ✓</div></div>
+      <div class="agent-node" style="left:calc(25% - 32px);top:330px;"><div class="agent-circle complete">🛡️</div><div class="agent-name" style="color:var(--data);">TRUST</div><div class="agent-status complete">DONE ✓</div></div>
+      <div class="agent-node" style="left:calc(15% - 32px);top:200px;"><div class="agent-circle">🧠</div><div class="agent-name" style="color:var(--dim);">CD BRAIN</div><div class="agent-status idle">IDLE</div></div>
+      <!-- Conductor center -->
+      <div class="agent-node" style="left:calc(50% - 38px);top:190px;"><div class="agent-circle active" style="width:76px;height:76px;font-size:28px;border-color:var(--bright);">🎯</div><div class="agent-name" style="color:var(--bright);">CONDUCTOR</div><div class="agent-status active">ACTIVE</div></div>
+      <!-- Beam from conductor to scout -->
+      <div class="beam-line" style="top:228px;left:calc(50%);width:160px;transform:rotate(-55deg);"></div>
+    </div>
+    <div class="swarm-feed">
+      <div class="feed-header"><h3 style="font-size:12px;">Activity Feed</h3><span style="font-size:9px;color:var(--dim);">6 events</span></div>
+      <div class="chips">
+        <div class="chip" style="border-color:rgba(0,255,136,0.3);color:var(--accent);"><div class="dot" style="background:var(--accent);"></div>🔍 SCOUT</div>
+        <div class="chip" style="border-color:rgba(68,136,255,0.3);color:var(--data);"><div class="dot" style="background:var(--data);"></div>🛡️ TRUST</div>
+        <div class="chip" style="border-color:rgba(68,136,255,0.3);color:var(--data);"><div class="dot" style="background:var(--data);"></div>📡 MEDIA</div>
+        <div class="chip" style="border-color:rgba(68,68,96,0.3);color:var(--dim);"><div class="dot" style="background:var(--dim);"></div>🪪 CARD</div>
+        <div class="chip" style="border-color:rgba(68,68,96,0.3);color:var(--dim);"><div class="dot" style="background:var(--dim);"></div>🤝 DEALER</div>
+        <div class="chip" style="border-color:rgba(68,68,96,0.3);color:var(--dim);"><div class="dot" style="background:var(--dim);"></div>🌱 SEEDER</div>
+        <div class="chip" style="border-color:rgba(68,68,96,0.3);color:var(--dim);"><div class="dot" style="background:var(--dim);"></div>🧠 BRAIN</div>
+        <div class="chip" style="border-color:rgba(0,255,136,0.3);color:var(--accent);"><div class="dot" style="background:var(--accent);"></div>🎯 CONDUCTOR</div>
+      </div>
+      <div class="feed-list">
+        <div class="feed-item"><div><span class="time">12:00:06</span><span class="status-tag info">INFO</span></div><div class="action">BRAND AUDIT</div><div class="detail">Scanning AI platforms for brand mentions...</div></div>
+        <div class="feed-item"><div><span class="time">12:00:05</span><span class="status-tag success">SUCCESS</span></div><div class="action">MEDIA PLAN</div><div class="detail">Completed successfully</div></div>
+        <div class="feed-item"><div><span class="time">12:00:04</span><span class="status-tag success">SUCCESS</span></div><div class="action">VERIFY CLAIMS</div><div class="detail">Completed successfully</div></div>
+        <div class="feed-item"><div><span class="time">12:00:03</span><span class="status-tag success">SUCCESS</span></div><div class="action">ATTESTATION</div><div class="detail">Creating HMAC-SHA256 cryptographic attestation...</div></div>
+        <div class="feed-item"><div><span class="time">12:00:01</span><span class="status-tag info">INFO</span></div><div class="action">INITIATE</div><div class="detail">Starting full swarm analysis for Stena Line...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:40px;color:var(--dim);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;">
+  NAPKIN A2A v0.1.0-alpha // napkin.ie // The agent-to-agent advertising protocol
+</div>
+
+</div>
+</body>
+</html>

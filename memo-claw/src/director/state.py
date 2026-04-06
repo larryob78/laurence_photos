@@ -122,11 +122,23 @@ class JobRepository:
         episode = await self.db_session.get(Episode, job_id)
         if episode is None:
             return None
+        # Map EpisodeStatus back to the closest JobStatus
+        episode_to_job_status = {
+            EpisodeStatus.DRAFT: JobStatus.BRIEF,
+            EpisodeStatus.SCRIPTING: JobStatus.SCRIPTING,
+            EpisodeStatus.VOICE: JobStatus.VOICE,
+            EpisodeStatus.VIDEO: JobStatus.VIDEO,
+            EpisodeStatus.QA: JobStatus.QA,
+            EpisodeStatus.PUBLISHED: JobStatus.PUBLISHED,
+            EpisodeStatus.FAILED: JobStatus.FAILED,
+        }
+        status = episode_to_job_status.get(episode.status, JobStatus.BRIEF)
         return JobState(
             job_id=episode.id,
+            status=status,
             character_id=episode.character_id,
             format_id=episode.format_id,
             question=episode.question,
-            attempts=episode.attempt_counts or {},
+            attempts=episode.attempt_counts or {"script": 0, "voice": 0, "video": 0, "repair": 0},
             scores=episode.scores or {},
         )

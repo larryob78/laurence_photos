@@ -8,8 +8,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.db.models import Character, Episode, MemoryEntry, Scorecard
-from src.db.session import get_session
+from src.db.models import (
+    Character,
+    Episode,
+    EpisodeStatus,
+    MemoryEntry,
+    MemoryEntryType,
+    Scorecard,
+    ScorecardStage,
+)
+from src.db.session import async_session_factory, get_session
 from src.director.loop import Director
 from src.director.state import JobState
 from src.memory.wiki import CharacterWiki
@@ -46,16 +54,21 @@ def _build_director(session: AsyncSession) -> Director:
     return Director(claude, elevenlabs, runway, storage, wiki, session)
 
 
+async def _run_job_background(job: JobState):
+    """Run a Director job with its own DB session (not tied to request lifecycle)."""
+    async with async_session_factory() as session:
+        director = _build_director(session)
+        await director.run_job(job)
+
+
 @router.post("/jobs")
-async def create_job(req: CreateJobRequest, session: AsyncSession = Depends(get_session)):
+async def create_job(req: CreateJobRequest):
     job = JobState(
         character_id=req.character_id,
         format_id=req.format_id,
         question=req.question,
     )
-    director = _build_director(session)
-    # Run in background
-    asyncio.create_task(director.run_job(job))
+    asyncio.create_task(_run_job_background(job))
     return {"job_id": job.job_id, "status": "BRIEF"}
 
 
@@ -85,7 +98,7 @@ async def list_jobs(
 ):
     stmt = select(Episode)
     if status:
-        stmt = stmt.where(Episode.status == status)
+        stmt = stmt.where(Episode.status == EpisodeStatus(status))
     if character_id:
         stmt = stmt.where(Episode.character_id == character_id)
     stmt = stmt.order_by(Episode.created_at.desc()).limit(limit)
@@ -107,14 +120,17 @@ async def advance_job(job_id: str, req: AdvanceJobRequest, session: AsyncSession
     episode = await session.get(Episode, job_id)
     if episode is None:
         raise HTTPException(404, "Job not found")
-    if req.action == "approve":
-        episode.status = "PUBLISHED"
-    elif req.action == "reject":
-        episode.status = "FAILED"
-    elif req.action == "retry":
-        episode.status = "SCRIPTING"
+    action_map = {
+        "approve": EpisodeStatus.PUBLISHED,
+        "reject": EpisodeStatus.FAILED,
+        "retry": EpisodeStatus.SCRIPTING,
+    }
+    new_status = action_map.get(req.action)
+    if new_status is None:
+        raise HTTPException(400, f"Invalid action: {req.action}")
+    episode.status = new_status
     await session.commit()
-    return {"job_id": job_id, "status": episode.status}
+    return {"job_id": job_id, "status": episode.status.value}
 
 
 @router.get("/characters")
@@ -136,7 +152,7 @@ async def get_character_memory(
 ):
     stmt = select(MemoryEntry).where(MemoryEntry.character_id == character_id)
     if entry_type:
-        stmt = stmt.where(MemoryEntry.entry_type == entry_type)
+        stmt = stmt.where(MemoryEntry.entry_type == MemoryEntryType(entry_type))
     stmt = stmt.order_by(MemoryEntry.created_at.desc()).limit(limit)
     result = await session.execute(stmt)
     entries = result.scalars().all()
@@ -174,7 +190,7 @@ async def list_scorecards(
     if episode_id:
         stmt = stmt.where(Scorecard.episode_id == episode_id)
     if stage:
-        stmt = stmt.where(Scorecard.stage == stage)
+        stmt = stmt.where(Scorecard.stage == ScorecardStage(stage))
     result = await session.execute(stmt)
     cards = result.scalars().all()
     return [

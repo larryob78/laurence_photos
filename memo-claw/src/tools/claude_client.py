@@ -88,6 +88,8 @@ class ClaudeClient:
                     system=system,
                     messages=[{"role": "user", "content": user}],
                 )
+                if not response.content:
+                    raise RuntimeError("Claude returned empty response content")
                 return response.content[0].text
             except anthropic.RateLimitError as e:
                 if attempt == max_retries - 1:

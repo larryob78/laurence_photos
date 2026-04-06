@@ -1,5 +1,6 @@
 """Local (and S3-ready) file storage client."""
 
+import asyncio
 from pathlib import Path
 
 
@@ -15,9 +16,9 @@ class StorageClient:
 
     async def _save_local(self, data: bytes, category: str, filename: str) -> str:
         dir_path = self.base_path / category
-        dir_path.mkdir(parents=True, exist_ok=True)
+        await asyncio.to_thread(dir_path.mkdir, parents=True, exist_ok=True)
         file_path = dir_path / filename
-        file_path.write_bytes(data)
+        await asyncio.to_thread(file_path.write_bytes, data)
         return f"file://{file_path.resolve()}"
 
     async def _save_s3(self, data: bytes, category: str, filename: str) -> str:
@@ -33,7 +34,7 @@ class StorageClient:
         if uri.startswith("s3://"):
             return await self._load_s3(uri)
         path = uri.replace("file://", "")
-        return Path(path).read_bytes()
+        return await asyncio.to_thread(Path(path).read_bytes)
 
     async def _load_s3(self, uri: str) -> bytes:
         import aioboto3
@@ -57,6 +58,8 @@ class StorageClient:
                     for obj in page.get("Contents", []):
                         results.append(f"s3://{self.s3_bucket}/{obj['Key']}")
         else:
+            if not self.base_path.exists():
+                return results
             for category_dir in self.base_path.iterdir():
                 if category_dir.is_dir():
                     for f in category_dir.iterdir():

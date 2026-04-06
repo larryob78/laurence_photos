@@ -61,9 +61,13 @@ class RunwayClient:
                 logger.info(f"Task {task_id}: {status} ({elapsed}s elapsed)")
 
                 if status == "SUCCEEDED":
+                    outputs = data.get("output") or []
+                    output_url = outputs[0] if outputs else data.get("output_url")
+                    if not output_url:
+                        raise RuntimeError(f"Runway task {task_id} succeeded but returned no output URL")
                     return {
                         "status": status,
-                        "output_url": data.get("output", [None])[0] or data.get("output_url"),
+                        "output_url": output_url,
                         "failure_reason": None,
                     }
                 elif status == "FAILED":

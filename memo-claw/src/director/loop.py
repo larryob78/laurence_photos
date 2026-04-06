@@ -150,8 +150,25 @@ class Director:
                 logger.error("job.error", job_id=job.job_id, stage=job.status.value, error=str(e))
                 traceback.print_exc()
                 job.record_error(job.status.value, str(e))
-                stage_key = job.status.value.lower()
-                if not job.can_retry(stage_key):
+                # Map current status to a retryable stage key
+                stage_retry_map = {
+                    JobStatus.SCRIPTING: "script",
+                    JobStatus.SCORING: "script",
+                    JobStatus.VOICE: "voice",
+                    JobStatus.VIDEO: "video",
+                    JobStatus.QA: "repair",
+                    JobStatus.REPAIR: "repair",
+                    JobStatus.FINAL_SCORE: "repair",
+                }
+                stage_key = stage_retry_map.get(job.status)
+                if stage_key and job.can_retry(stage_key):
+                    job.record_attempt(stage_key)
+                    # For retriable stages, restart from a sensible point
+                    if stage_key == "script":
+                        job.advance(JobStatus.SCRIPTING)
+                    elif stage_key in ("voice", "video", "repair"):
+                        pass  # Re-enter same status on next iteration
+                else:
                     job.status = JobStatus.FAILED
 
             await self.job_repo.save(job)

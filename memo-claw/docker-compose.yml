@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: memoclaw
+      POSTGRES_PASSWORD: memoclaw
+      POSTGRES_DB: memoclaw
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

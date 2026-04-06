@@ -8,10 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.db.models import Character, Episode, MemoryEntry, MemoryEntryType, Scorecard
+from src.db.models import Character, Episode, MemoryEntry, Scorecard
 from src.db.session import get_session
 from src.director.loop import Director
-from src.director.state import JobState, JobStatus
+from src.director.state import JobState
 from src.memory.wiki import CharacterWiki
 from src.tools.claude_client import ClaudeClient
 from src.tools.elevenlabs_client import ElevenLabsClient

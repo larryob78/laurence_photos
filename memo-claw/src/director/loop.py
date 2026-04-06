@@ -1,6 +1,5 @@
 """The Director loop — heart of Memo Claw. Runs a single job through the full pipeline."""
 
-import logging
 import traceback
 
 import structlog
@@ -11,6 +10,7 @@ from src.tools.claude_client import ClaudeClient
 from src.tools.elevenlabs_client import ElevenLabsClient
 from src.tools.runway_client import RunwayClient
 from src.tools.storage import StorageClient
+from src.workers.localiser import Localiser
 
 logger = structlog.get_logger()
 
@@ -71,6 +71,16 @@ class Director:
                     if passing:
                         job.selected_script = passing[0]["script"]
                         logger.info("job.script_selected", score=passing[0]["score"]["average"])
+
+                        # Auto-generate Thai localisation
+                        try:
+                            localiser = Localiser(self.claude)
+                            localised = await localiser.localise(job.selected_script, character, "th")
+                            job.assets["localised_th"] = localised
+                            logger.info("job.localised", language="th")
+                        except Exception as loc_err:
+                            logger.warning("job.localisation_failed", language="th", error=str(loc_err))
+
                         job.advance(JobStatus.VOICE)
                     elif job.can_retry("script"):
                         logger.warning("job.no_passing_scripts, retrying")
@@ -95,7 +105,7 @@ class Director:
                     logger.info("job.video", job_id=job.job_id)
                     job.record_attempt("video")
                     video_prompt = self._build_video_prompt(job.selected_script, character)
-                    result = await self.runway.create_and_wait(video_prompt)
+                    result = await self.runway.create_and_wait(video_prompt, storage=self.storage)
                     job.assets["video_uris"].append(result["video_uri"])
                     job.provider_meta["runway"] = {"task_id": result["task_id"]}
                     job.advance(JobStatus.QA)

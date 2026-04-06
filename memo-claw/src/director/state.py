@@ -5,8 +5,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sqlalchemy import select
-
 from src.db.models import Episode, EpisodeStatus
 
 

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 
 import httpx
 
@@ -78,14 +79,15 @@ class RunwayClient:
         async with httpx.AsyncClient(timeout=120) as client:
             response = await client.get(output_url)
             response.raise_for_status()
-            import time
             filename = f"{episode_id}_video_{int(time.time())}.mp4"
             return await storage.save(response.content, "video", filename)
 
     async def create_and_wait(
-        self, prompt: str, image_uri: str | None = None, duration: int = 10
+        self, prompt: str, storage=None, image_uri: str | None = None, duration: int = 10
     ) -> dict:
         task_id = await self.create_video_task(prompt, image_uri, duration)
         result = await self.poll_task(task_id)
-        video_uri = await self.download_video(result["output_url"], task_id, None)
+        if storage is None:
+            raise ValueError("storage is required for create_and_wait")
+        video_uri = await self.download_video(result["output_url"], task_id, storage)
         return {"task_id": task_id, "status": result["status"], "video_uri": video_uri}

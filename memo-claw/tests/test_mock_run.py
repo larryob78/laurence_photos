@@ -1,7 +1,6 @@
 """Test the Director state machine logic with mocked external APIs."""
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -85,6 +84,10 @@ async def test_director_loop_mocked():
     claude = AsyncMock()
     claude.write_script = AsyncMock(return_value=[mock_script] * 5)
     claude.score_script = AsyncMock(return_value=mock_score)
+    claude.localise_script = AsyncMock(return_value={
+        "localised_script": mock_script,
+        "adaptation_notes": "Adapted for Thai audience",
+    })
 
     elevenlabs = AsyncMock()
     elevenlabs.generate_voice = AsyncMock(return_value=b"fake-audio-data")

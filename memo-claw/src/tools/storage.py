@@ -1,6 +1,5 @@
 """Local (and S3-ready) file storage client."""
 
-import os
 from pathlib import Path
 
 

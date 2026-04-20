@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelf Share Analyzer — Demo</title>
+<style>
+:root{
+  --bg:#fafaf7; --ink:#1b1b1a; --muted:#6b6a63; --border:#e6e4dd;
+  --surface:#fff; --accent:#2f6f5e; --accent-tint:rgba(47,111,94,.08);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.topbar{max-width:1100px;margin:0 auto;padding:40px 24px 16px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,var(--accent-tint) 0%,transparent 100%)}
+.topbar h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.tagline{margin:4px 0 0;color:var(--muted);font-size:14px}
+.badge{display:inline-block;margin-left:10px;padding:2px 8px;font-size:11px;
+  border-radius:999px;background:var(--accent);color:#fff;vertical-align:middle;
+  letter-spacing:.04em;text-transform:uppercase}
+main{max-width:1100px;margin:0 auto;padding:28px 24px 48px}
+.results-grid{display:grid;grid-template-columns:minmax(0,480px) 1fr;gap:28px;align-items:start}
+@media (max-width:820px){.results-grid{grid-template-columns:1fr}}
+.preview{margin:0;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;aspect-ratio:4/3;
+  display:flex;align-items:flex-end;justify-content:stretch;position:relative}
+.preview .rows{display:flex;flex-direction:column;width:100%;height:100%}
+.preview .row{flex:1;display:flex;border-top:1px solid rgba(0,0,0,.06)}
+.preview .row:first-child{border-top:none}
+.preview .row span{flex:1;opacity:.85}
+.preview .tag{position:absolute;top:10px;left:10px;font-size:11px;color:var(--muted);
+  background:rgba(255,255,255,.85);padding:3px 8px;border-radius:999px;
+  border:1px solid var(--border)}
+.breakdown h2{font-size:13px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.breakdown h2:not(:first-child){margin-top:28px}
+.stack-bar{display:flex;width:100%;height:28px;border-radius:999px;
+  overflow:hidden;background:var(--border);margin-bottom:12px}
+.stack-bar .seg{display:block;height:100%;
+  box-shadow:inset 1px 0 0 rgba(255,255,255,.7)}
+.stack-bar .seg:first-child{box-shadow:none}
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.legend li{display:grid;grid-template-columns:12px 1fr auto;align-items:center;
+  gap:10px;font-size:14px;padding:4px 0}
+.legend .swatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+.legend .name{color:var(--ink)}
+.legend .pct{color:var(--muted);font-variant-numeric:tabular-nums}
+.shelves{display:flex;flex-direction:column;gap:10px}
+.shelf-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px}
+.shelf-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.shelf-name{font-weight:600;font-size:14px}
+.shelf-meta{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.foot{max-width:1100px;margin:0 auto;padding:20px 24px 32px;text-align:center;
+  color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Shelf Share Analyzer <span class="badge">demo</span></h1>
+  <p class="tagline">Measure % of shelf space each brand owns. Static demo — numbers are illustrative.</p>
+</header>
+<main>
+  <div class="results-grid">
+    <figure class="preview" aria-label="illustrative shelf visualisation">
+      <span class="tag">shelf photo</span>
+      <div class="rows" id="preview-rows"></div>
+    </figure>
+    <div class="breakdown">
+      <h2>Overall share-of-shelf</h2>
+      <div id="overall" class="stack-bar"></div>
+      <ul id="overall-legend" class="legend"></ul>
+      <h2>Per shelf</h2>
+      <div id="shelves" class="shelves"></div>
+    </div>
+  </div>
+</main>
+<footer class="foot">Static demo — open directly in a browser. Powered by Claude vision when live.</footer>
+
+<script>
+const DATA = {
+  shelves: [
+    { shelf:"shelf_1", total_width_px:1480, brands:[
+      {brand:"M&S Lemonade",    width_px:320},
+      {brand:"M&S Ginger Beer", width_px:180},
+      {brand:"M&S Blends",      width_px:380},
+      {brand:"M&S Cordial",     width_px:260},
+      {brand:"Presse",          width_px:340},
+    ]},
+    { shelf:"shelf_2", total_width_px:1480, brands:[
+      {brand:"M&S Lemonade",      width_px:360},
+      {brand:"San Pellegrino",    width_px:420},
+      {brand:"M&S British Apple", width_px:180},
+      {brand:"M&S Juice",         width_px:520},
+    ]},
+    { shelf:"shelf_3", total_width_px:1480, brands:[
+      {brand:"M&S Lemonade",   width_px:300},
+      {brand:"Jooj",           width_px:420},
+      {brand:"Presse",         width_px:380},
+      {brand:"M&S Sparkling",  width_px:380},
+    ]},
+    { shelf:"shelf_4", total_width_px:1480, brands:[
+      {brand:"Coca-Cola",       width_px:340},
+      {brand:"Fanta",           width_px:220},
+      {brand:"Coca-Cola Zero",  width_px:240},
+      {brand:"M&S Cola",        width_px:220},
+      {brand:"M&S Lemon",       width_px:460},
+    ]},
+  ]
+};
+
+const colorCache = new Map();
+const hashStr = s => { let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h); };
+const colorFor = b => {
+  if(!colorCache.has(b)) colorCache.set(b, `hsl(${hashStr(b)%360},55%,55%)`);
+  return colorCache.get(b);
+};
+const pct = (w,t) => +(100*w/t).toFixed(1);
+const sortPct = arr => [...arr].sort((a,b)=>b.pct-a.pct);
+
+const buildBar = (el, items) => {
+  el.innerHTML = "";
+  sortPct(items).forEach(b => {
+    const s = document.createElement("span");
+    s.className = "seg";
+    s.style.width = b.pct + "%";
+    s.style.background = colorFor(b.brand);
+    s.title = `${b.brand} — ${b.pct}%`;
+    el.appendChild(s);
+  });
+};
+const buildLegend = (el, items) => {
+  el.innerHTML = "";
+  sortPct(items).forEach(b => {
+    const li = document.createElement("li");
+    const sw = document.createElement("span"); sw.className="swatch"; sw.style.background=colorFor(b.brand);
+    const nm = document.createElement("span"); nm.className="name"; nm.textContent=b.brand;
+    const pc = document.createElement("span"); pc.className="pct"; pc.textContent=b.pct+"%";
+    li.append(sw,nm,pc);
+    el.appendChild(li);
+  });
+};
+
+// annotate percentages
+let grand = 0;
+const agg = {};
+DATA.shelves.forEach(s => {
+  grand += s.total_width_px;
+  s.brands.forEach(b => { b.pct = pct(b.width_px, s.total_width_px); agg[b.brand]=(agg[b.brand]||0)+b.width_px; });
+});
+const overall = Object.entries(agg)
+  .map(([brand,w])=>({brand, width_px:w, pct:pct(w,grand)}))
+  .sort((a,b)=>b.pct-a.pct);
+
+buildBar(document.getElementById("overall"), overall);
+buildLegend(document.getElementById("overall-legend"), overall);
+
+const shelvesEl = document.getElementById("shelves");
+DATA.shelves.forEach(s => {
+  const card = document.createElement("article"); card.className="shelf-card";
+  const head = document.createElement("header"); head.className="shelf-head";
+  const name = document.createElement("span"); name.className="shelf-name"; name.textContent=s.shelf;
+  const meta = document.createElement("span"); meta.className="shelf-meta"; meta.textContent=`~${s.total_width_px}px`;
+  head.append(name,meta);
+  const bar = document.createElement("div"); buildBar(bar, s.brands); bar.classList.add("stack-bar");
+  const legend = document.createElement("ul"); legend.className="legend"; buildLegend(legend, s.brands);
+  card.append(head, bar, legend);
+  shelvesEl.appendChild(card);
+});
+
+// mini illustrative "shelf photo" made of the same stack bars
+const rowsEl = document.getElementById("preview-rows");
+DATA.shelves.forEach(s => {
+  const row = document.createElement("div"); row.className="row";
+  sortPct(s.brands).forEach(b => {
+    const span = document.createElement("span");
+    span.style.flex = b.pct;
+    span.style.background = colorFor(b.brand);
+    row.appendChild(span);
+  });
+  rowsEl.appendChild(row);
+});
+</script>
+</body>
+</html>

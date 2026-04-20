@@ -6,7 +6,7 @@ from pathlib import Path
 try:
     from anthropic import Anthropic
 except ImportError:
-    sys.exit("pip install anthropic")
+    Anthropic = None  # real CLI use re-checks in main(); importable for mock mode
 
 MODEL = "claude-sonnet-4-6"
 
@@ -100,6 +100,8 @@ def main() -> None:
     ap.add_argument("--json", action="store_true", help="print raw JSON only")
     args = ap.parse_args()
 
+    if Anthropic is None:
+        sys.exit("pip install anthropic")
     client = Anthropic()
     for path in args.images:
         if not path.is_file():

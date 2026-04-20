@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shelf Share Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Shelf Share Analyzer</h1>
+    <p class="tagline">Measure % of shelf space each brand owns.</p>
+  </header>
+  <main>
+    <section id="upload-section">
+      <label id="drop-zone" for="file-input" class="drop-zone">
+        <div class="drop-icon" aria-hidden="true">📷</div>
+        <div class="drop-title">Drop a shelf photo here</div>
+        <div class="drop-sub">or click to choose a file</div>
+        <input type="file" id="file-input" accept="image/*" hidden>
+      </label>
+    </section>
+
+    <section id="loading" class="loading" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <div>Analysing shelves…</div>
+    </section>
+
+    <section id="error" class="error" hidden></section>
+
+    <section id="results" class="results" hidden>
+      <div class="results-grid">
+        <figure class="preview">
+          <img id="preview" alt="uploaded shelf photo">
+        </figure>
+        <div class="breakdown">
+          <h2>Overall share-of-shelf</h2>
+          <div id="overall" class="stack-bar" aria-label="overall shares"></div>
+          <ul id="overall-legend" class="legend"></ul>
+          <h2>Per shelf</h2>
+          <div id="shelves" class="shelves"></div>
+        </div>
+      </div>
+      <button id="reset" class="reset">Analyse another photo</button>
+    </section>
+  </main>
+  <footer class="foot">Powered by Claude vision</footer>
+</body>
+</html>
